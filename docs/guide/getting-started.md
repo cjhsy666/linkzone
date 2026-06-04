@@ -44,8 +44,7 @@ linkzone-user-windows-amd64.exe
 
 启动后，框架会自动：
 - 初始化工作目录和存储
-- 验证许可证（User Edition 内置默认密钥，开箱即用）
-- 解压并初始化运行时生态（Node.js / Python）
+- 初始化运行时生态（Node.js / Python）
 - 加载内置组件和适配器
 - 启动 HTTP 服务器（默认端口 8080）
 - 启动 CLI 交互界面
