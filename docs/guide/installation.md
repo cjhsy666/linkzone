@@ -43,8 +43,8 @@ linkzone-user-windows-amd64.exe
 首次启动时，框架会自动：
 - 创建工作目录（`data/`、`logs/`、`plugins/`、`skills/`、`public/`）
 - 初始化 BadgerDB 存储
-- 初始化运行时生态（Node.js / Python）
 - 生成默认配置文件 `data/config.yaml`
+- 启用运行时后，会自动初始化 Node.js / Python 运行时生态
 
 ## 部署方式
 
@@ -137,11 +137,9 @@ LinkZone 启动时的初始化顺序：
 
 1. **初始化工作目录** — 创建 `data/`、`logs/` 等必要目录
 2. **初始化存储** — 初始化 BadgerDB、加载配置
-3. **初始化 LLM 服务** — 加载 LLM 供应商配置
-4. **初始化智能体** — 创建智能体管理器
-5. **注册组件** — 注册适配器、内置插件等
-6. **启动服务** — 启动 HTTP 服务器、Bot 核心、Unix Socket、运行时管理器
-7. **事件监听** — 监听系统信号（SIGINT/SIGTERM）
+3. **注册组件** — 注册适配器、内置插件等
+4. **启动服务** — 启动 HTTP 服务器、Bot 核心、运行时管理器（如已启用）
+5. **事件监听** — 监听系统信号（SIGINT/SIGTERM）
 
 ## 重启与关闭
 
