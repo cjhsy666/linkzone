@@ -2,15 +2,70 @@
 
 AI 工具插件允许智能体在对话中自动调用插件功能。当用户的需求匹配工具描述时，LLM 会自动选择并调用对应工具。
 
-## 概述
+## 两种调用模式
 
-AI 工具插件的工作流程：
+### 注入调用（Injectable）
 
+适合已有命令式插件，只需设置 `ai_triggerable: true`，AI 会通过 inject 工具将命令注入到消息流中，触发插件的 `handleMessage` 方法。
+
+```javascript
+metadata: {
+    name: 'smarthome',
+    ai_triggerable: true,
+    ai_trigger_usage: '控制智能家居设备',
+    ai_trigger_format: '{operation}{device}',
+    ai_trigger_args: {
+        operation: '操作：开/关/切换',
+        device: '设备名称'
+    }
+}
 ```
-用户消息 → 智能体 → LLM 判断需要调用工具 → 选择工具 → 执行工具 → 返回结果 → LLM 生成回复
+
+AI 看到用户说"开客厅灯"时，会自动注入命令 `开客厅灯`，触发插件的 `handleMessage`。
+
+### 直接调用（Tool）
+
+适合为 AI 专门设计的工具，配置 `tool` 字段并提供 `executeTool` 方法，AI 通过 Function Calling 直接传入结构化参数。
+
+```javascript
+metadata: {
+    name: 'weather',
+    tool: {
+        enabled: true,
+        usage: '查询天气信息',
+        when_to_use: '当用户询问天气、气温等问题时',
+        parameters: [
+            { name: 'city', type: 'string', description: '城市名称', required: true },
+            { name: 'days', type: 'number', description: '预报天数', required: false, default: 1 }
+        ],
+        continue: true,
+        max_calls: 3
+    }
+}
 ```
 
-## 工具配置
+AI 看到用户问"北京天气怎么样"时，会直接调用 `executeTool(ctx, { city: '北京', days: 1 })`。
+
+### 如何选择
+
+| 场景 | 推荐模式 |
+|------|---------|
+| 已有命令插件，想让 AI 也能触发 | 注入调用 |
+| 为 AI 专门开发新工具 | 直接调用 |
+| 需要链式调用多个工具 | 直接调用 |
+| 需要结构化参数和返回值 | 直接调用 |
+| 简单的命令触发即可 | 注入调用 |
+
+## 注入调用配置
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `ai_triggerable` | boolean | 设为 `true` 启用注入调用 |
+| `ai_trigger_usage` | string | 工具用途描述，帮助 AI 判断何时使用 |
+| `ai_trigger_format` | string | 命令格式模板，如 `{operation}{device}` |
+| `ai_trigger_args` | object | 参数说明，如 `{ operation: "操作类型" }` |
+
+## 直接调用配置
 
 ### ToolConfig 字段
 
@@ -32,16 +87,39 @@ AI 工具插件的工作流程：
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | `name` | string | 是 | 参数名 |
-| `type` | string | 是 | 参数类型（string / number / boolean） |
+| `type` | string | 是 | 参数类型（string / number / boolean / array） |
 | `description` | string | 是 | 参数描述 |
 | `required` | boolean | 是 | 是否必填 |
 | `enum` | string[] | 否 | 可选值列表 |
 | `default` | any | 否 | 默认值 |
 | `example` | string | 否 | 示例值 |
 
-## 注册 AI 工具
+## 完整示例
 
-### Node.js
+### 注入调用示例（Node.js）
+
+```javascript
+module.exports = {
+    metadata: {
+        name: 'translate',
+        version: '1.0.0',
+        description: '翻译工具',
+        triggers: [{ type: 0, pattern: '/translate' }],
+        event_types: ['message'],
+        ai_triggerable: true,
+        ai_trigger_usage: '翻译文本',
+        ai_trigger_format: '/translate {text}',
+        ai_trigger_args: { text: '要翻译的文本' }
+    },
+    async handleMessage(sender) {
+        const text = await sender.param(0);
+        // 翻译逻辑...
+        await sender.reply(`翻译结果: ${text}`);
+    }
+};
+```
+
+### 直接调用示例（Node.js）
 
 ```javascript
 module.exports = {
@@ -73,11 +151,7 @@ module.exports = {
             ],
             continue: true,
             max_calls: 3
-        },
-        ai_triggerable: true,
-        ai_trigger_usage: '查询天气信息',
-        ai_trigger_format: '/weather {city}',
-        ai_trigger_args: { city: '城市名称' }
+        }
     },
     async handleMessage(sender) {
         const city = await sender.param(0);
@@ -93,13 +167,12 @@ module.exports = {
         };
     },
     async queryWeather(city, days = 1) {
-        // 实际查询逻辑
         return `${city}今天晴，25°C`;
     }
 };
 ```
 
-### Python
+### 直接调用示例（Python）
 
 ```python
 metadata = {
@@ -116,12 +189,9 @@ metadata = {
             {"name": "city", "type": "string", "description": "城市名称", "required": True},
             {"name": "days", "type": "number", "description": "预报天数", "required": False, "default": 1}
         ],
-        "continue": True
-    },
-    "ai_triggerable": True,
-    "ai_trigger_usage": "查询天气信息",
-    "ai_trigger_format": "/weather {city}",
-    "ai_trigger_args": {"city": "城市名称"}
+        "continue": True,
+        "max_calls": 3
+    }
 }
 
 async def handle_message(sender):
@@ -153,44 +223,6 @@ async def query_weather(city, days=1):
 }
 ```
 
-## OpenAI Function Calling 格式
-
-框架会自动将 `ToolConfig` 转换为 OpenAI Function Calling 格式：
-
-```json
-{
-    "type": "function",
-    "function": {
-        "name": "weather",
-        "description": "查询指定城市的天气信息",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "city": {
-                    "type": "string",
-                    "description": "城市名称"
-                },
-                "days": {
-                    "type": "number",
-                    "description": "预报天数",
-                    "default": 1
-                }
-            },
-            "required": ["city"]
-        }
-    }
-}
-```
-
-## AI 触发说明
-
-`ai_triggerable`、`ai_trigger_usage`、`ai_trigger_format`、`ai_trigger_args` 字段帮助 LLM 理解何时以及如何使用此工具：
-
-- **ai_triggerable**：设为 `true` 后，此工具会出现在智能体的工具列表中
-- **ai_trigger_usage**：描述工具的用途，帮助 LLM 判断是否需要调用
-- **ai_trigger_format**：命令格式模板，如 `/weather {city}`
-- **ai_trigger_args**：参数说明，如 `{ city: "城市名称" }`
-
 ## 工具权限
 
 工具的 `permission_level` 控制哪些用户可以触发：
@@ -208,7 +240,6 @@ metadata: {
 
 ```javascript
 async executeTool(ctx, args) {
-    // ctx 包含调用者信息
     console.log(ctx.agent_id);    // 智能体 ID
     console.log(ctx.user_id);     // 用户 ID
     console.log(ctx.group_id);    // 群组 ID
