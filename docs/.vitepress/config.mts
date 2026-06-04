@@ -37,8 +37,7 @@ export default defineConfig({
             { text: '适配器系统', link: '/features/adapter' },
             { text: '智能体配置', link: '/features/agent' },
             { text: '智能家居', link: '/features/smarthome' },
-            { text: '插件系统', link: '/features/plugin' },
-            { text: '许可证系统', link: '/features/license' }
+            { text: '插件系统', link: '/features/plugin' }
           ]
         }
       ],
@@ -85,7 +84,7 @@ export default defineConfig({
       ]
     },
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/linkzone' }
+      { icon: 'github', link: 'https://github.com/cjhsy666/linkzone' }
     ],
     search: {
       provider: 'local',

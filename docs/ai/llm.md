@@ -58,37 +58,14 @@ LinkZone 支持 30+ 大语言模型供应商，通过统一接口调用，无需
 
 LLM 通过 Upstream（上游）机制管理。每个 Upstream 代表一个 LLM 供应商的接入配置，包含 API 地址、密钥、可用模型等。
 
-### 通过 API 添加 Upstream
+### 通过 Web 后台配置
 
-```bash
-# 添加 DeepSeek
-curl -X POST http://localhost:8080/api/v1/admin/llm/upstreams \
-  -H "Authorization: Bearer your-admin-token" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "DeepSeek",
-    "provider": "openai",
-    "base_url": "https://api.deepseek.com/v1",
-    "api_key": "sk-xxx",
-    "models": ["deepseek-chat", "deepseek-reasoner"],
-    "enabled": true,
-    "priority": 100
-  }'
-
-# 添加 OpenAI
-curl -X POST http://localhost:8080/api/v1/admin/llm/upstreams \
-  -H "Authorization: Bearer your-admin-token" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "OpenAI",
-    "provider": "openai",
-    "base_url": "https://api.openai.com/v1",
-    "api_key": "sk-xxx",
-    "models": ["gpt-4o", "gpt-4o-mini"],
-    "enabled": true,
-    "priority": 90
-  }'
-```
+在管理后台 → LLM 管理中，可以：
+- 添加、编辑、删除 Upstream
+- 测试 Upstream 连通性
+- 自动获取供应商支持的模型列表
+- 配置模型回退链
+- 查看所有可用模型
 
 ### Upstream 配置字段
 
@@ -111,7 +88,7 @@ curl -X POST http://localhost:8080/api/v1/admin/llm/upstreams \
 
 ### 智能体级别配置
 
-每个智能体可以在 `runtime` 配置中指定使用的模型：
+每个智能体可以在 `runtime` 配置中指定使用的模型，在管理后台 → 智能体管理中编辑：
 
 ```json
 {
@@ -147,91 +124,43 @@ curl -X POST http://localhost:8080/api/v1/admin/llm/upstreams \
 
 ## 常见供应商配置示例
 
+添加 Upstream 时，需要根据供应商填写不同的配置：
+
 ### DeepSeek
 
-```bash
-curl -X POST http://localhost:8080/api/v1/admin/llm/upstreams \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "DeepSeek",
-    "provider": "openai",
-    "base_url": "https://api.deepseek.com/v1",
-    "api_key": "sk-xxx",
-    "models": ["deepseek-chat", "deepseek-reasoner"]
-  }'
-```
+| 字段 | 值 |
+|------|-----|
+| provider | `openai` |
+| base_url | `https://api.deepseek.com/v1` |
+| api_key | 你的 DeepSeek API Key |
+| models | `deepseek-chat`, `deepseek-reasoner` |
 
 ### OpenAI
 
-```bash
-curl -X POST http://localhost:8080/api/v1/admin/llm/upstreams \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "OpenAI",
-    "provider": "openai",
-    "base_url": "https://api.openai.com/v1",
-    "api_key": "sk-xxx",
-    "models": ["gpt-4o", "gpt-4o-mini"]
-  }'
-```
+| 字段 | 值 |
+|------|-----|
+| provider | `openai` |
+| base_url | `https://api.openai.com/v1` |
+| api_key | 你的 OpenAI API Key |
+| models | `gpt-4o`, `gpt-4o-mini` |
 
 ### Ollama（本地模型）
 
-```bash
-curl -X POST http://localhost:8080/api/v1/admin/llm/upstreams \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Ollama",
-    "provider": "openai",
-    "base_url": "http://localhost:11434/v1",
-    "api_key": "ollama",
-    "models": ["qwen2.5:7b"]
-  }'
-```
+| 字段 | 值 |
+|------|-----|
+| provider | `openai` |
+| base_url | `http://localhost:11434/v1` |
+| api_key | `ollama` |
+| models | 你本地运行的模型名 |
 
 ### Azure OpenAI
 
-```bash
-curl -X POST http://localhost:8080/api/v1/admin/llm/upstreams \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Azure OpenAI",
-    "provider": "azure",
-    "base_url": "https://your-resource.openai.azure.com",
-    "api_key": "xxx",
-    "models": ["gpt-4o"]
-  }'
-```
-
-## 管理 Upstream
-
-```bash
-# 列出所有 Upstream
-curl http://localhost:8080/api/v1/admin/llm/upstreams \
-  -H "Authorization: Bearer your-admin-token"
-
-# 获取 Upstream 详情
-curl http://localhost:8080/api/v1/admin/llm/upstreams/{id} \
-  -H "Authorization: Bearer your-admin-token"
-
-# 更新 Upstream
-curl -X PUT http://localhost:8080/api/v1/admin/llm/upstreams/{id} \
-  -H "Authorization: Bearer your-admin-token" \
-  -H "Content-Type: application/json" \
-  -d '{"api_key": "sk-new-key"}'
-
-# 删除 Upstream
-curl -X DELETE http://localhost:8080/api/v1/admin/llm/upstreams/{id} \
-  -H "Authorization: Bearer your-admin-token"
-
-# 测试 Upstream 连通性
-curl -X POST http://localhost:8080/api/v1/admin/llm/upstreams/{id}/test \
-  -H "Authorization: Bearer your-admin-token"
-
-# 自动获取 Upstream 支持的模型列表
-curl -X POST http://localhost:8080/api/v1/admin/llm/upstreams/{id}/fetch-models \
-  -H "Authorization: Bearer your-admin-token"
-```
+| 字段 | 值 |
+|------|-----|
+| provider | `azure` |
+| base_url | `https://你的资源名.openai.azure.com` |
+| api_key | 你的 Azure Key |
+| models | `gpt-4o` |
 
 ## 模型路由
 
@@ -245,19 +174,6 @@ curl -X POST http://localhost:8080/api/v1/admin/llm/upstreams/{id}/fetch-models 
 
 ## 模型回退
 
-可以为模型设置回退链，当主模型不可用时自动降级：
+可以为模型设置回退链，当主模型不可用时自动降级。在管理后台 → LLM 管理中配置回退链，例如：
 
-```bash
-# 设置回退：gpt-4o → deepseek-chat → gpt-4o-mini
-curl -X POST http://localhost:8080/api/v1/admin/llm/fallbacks \
-  -H "Authorization: Bearer your-admin-token" \
-  -H "Content-Type: application/json" \
-  -d '{"model": "gpt-4o", "fallbacks": ["deepseek-chat", "gpt-4o-mini"]}'
-```
-
-## 查看可用模型
-
-```bash
-curl http://localhost:8080/api/v1/admin/llm/models \
-  -H "Authorization: Bearer your-admin-token"
-```
+`gpt-4o` → `deepseek-chat` → `gpt-4o-mini`

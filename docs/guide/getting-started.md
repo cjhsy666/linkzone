@@ -52,6 +52,10 @@ linkzone-user-windows-amd64.exe
 
 ## 验证运行
 
+### 通过 Web 后台
+
+启动后访问 `http://localhost:8080`，打开 Web 管理后台，可以可视化管理所有功能。
+
 ### 通过 CLI 交互
 
 启动后可直接在终端输入命令：
@@ -66,16 +70,6 @@ Available commands:
   smarthome     Manage smart home devices
   system        Manage system settings
   users         Manage users
-```
-
-### 通过 API 访问
-
-```bash
-# 健康检查
-curl http://localhost:8080/api/v1/health
-
-# 获取系统状态
-curl http://localhost:8080/api/v1/status
 ```
 
 ## 下一步

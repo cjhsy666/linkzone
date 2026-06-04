@@ -17,28 +17,7 @@ AI 是 LinkZone 框架内的一个核心服务，负责 LLM 对话、技能匹�
 
 ## 快速配置
 
-AI 功能通过智能体配置启用。通过 API 或 Web 后台创建智能体：
-
-```bash
-curl -X POST http://localhost:8080/api/v1/admin/agents \
-  -H "Content-Type: application/json" \
-  -d '{
-    "id": "default",
-    "config": {
-      "enabled": true,
-      "personality": {
-        "name": "小助手",
-        "custom_identity": "你是一个友好的AI助手"
-      },
-      "runtime": {
-        "default": {
-          "model": "deepseek-chat",
-          "temperature": 0.7
-        }
-      }
-    }
-  }'
-```
+AI 功能通过智能体配置启用。在管理后台 → 智能体管理中创建智能体，配置人设、模型和各项能力即可。
 
 配置完成后，在群组中 @机器人 或发送消息即可触发 AI 对话。
 

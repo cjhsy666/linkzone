@@ -12,6 +12,8 @@
 
 ## 配置
 
+在管理后台 → 智能体管理中，编辑智能体的记忆配置：
+
 ```json
 {
   "memory": {
@@ -38,16 +40,7 @@
 
 ## 管理记忆
 
-```bash
-# 查看智能体上下文
-curl http://localhost:8080/api/v1/admin/agents/my_agent/context?group_id=group123 \
-  -H "Authorization: Bearer your-admin-token"
-
-# 清除上下文
-curl -X DELETE http://localhost:8080/api/v1/admin/agents/my_agent/context?group_id=group123 \
-  -H "Authorization: Bearer your-admin-token"
-
-# 强制生成摘要
-curl -X POST http://localhost:8080/api/v1/admin/agents/my_agent/context/summary/force?group_id=group123 \
-  -H "Authorization: Bearer your-admin-token"
-```
+在管理后台 → 智能体管理中，可以：
+- 查看智能体的上下文状态
+- 清除指定群组的上下文
+- 强制生成摘要

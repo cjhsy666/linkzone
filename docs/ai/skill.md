@@ -12,7 +12,7 @@
 
 ## 智能体技能配置
 
-在智能体配置中启用技能：
+在管理后台 → 智能体管理中，编辑智能体的技能配置：
 
 ```json
 {
@@ -94,31 +94,9 @@
 }
 ```
 
-## 通过 API 管理
+## 管理技能
 
-```bash
-# 列出所有技能
-curl http://localhost:8080/api/v1/admin/skills \
-  -H "Authorization: Bearer your-admin-token"
-
-# 创建技能
-curl -X POST http://localhost:8080/api/v1/admin/skills \
-  -H "Authorization: Bearer your-admin-token" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "id": "translator",
-    "name": "翻译",
-    "description": "当用户需要翻译文本时激活",
-    "match_strategy": "llm",
-    "prompt": "你是一个专业翻译。",
-    "enabled": true
-  }'
-
-# 启用技能
-curl -X POST http://localhost:8080/api/v1/admin/skills/translator/enable \
-  -H "Authorization: Bearer your-admin-token"
-
-# 禁用技能
-curl -X POST http://localhost:8080/api/v1/admin/skills/translator/disable \
-  -H "Authorization: Bearer your-admin-token"
-```
+在管理后台 → 技能管理中，可以：
+- 查看所有技能列表
+- 创建自定义技能
+- 启用/禁用技能

@@ -92,7 +92,7 @@ LinkZone 的配置文件位于 `data/config.yaml`，采用 YAML 数组格式存�
 
 - **类型**：`string`
 - **默认值**：`""`（空）
-- **说明**：Web 后台管理 API 的 Bearer Token。**强烈建议设置一个复杂字符串**，用于保护管理接口的安全。所有管理 API 请求需要在 Header 中携带此 Token。
+- **说明**：Web 后台管理 API 的 Bearer Token。**强烈建议设置一个复杂字符串**，用于保护管理接口的安全。设置后，访问 Web 后台和调用管理 API 时需要验证此 Token。
 
 ```yaml
 - key: system.server.admin_token
@@ -101,13 +101,7 @@ LinkZone 的配置文件位于 `data/config.yaml`，采用 YAML 数组格式存�
   comment: Web 后台管理 API 的 Bearer Token
 ```
 
-使用方式：
-
-```bash
-# 调用管理 API 时携带 Token
-curl http://localhost:8080/api/v1/admin/status \
-  -H "Authorization: Bearer your-secure-random-token-here"
-```
+设置后，访问 Web 后台时需要输入此 Token 进行身份验证。
 
 #### system.server.external_url
 
@@ -299,23 +293,9 @@ curl http://localhost:8080/api/v1/admin/status \
 | `system.license.key` | 否 | 需重启生效 |
 | `system.socket.path` | 否 | 需重启生效 |
 
-## 通过 API 管理配置
+## 通过 Web 后台管理配置
 
-### 获取所有配置
-
-```bash
-curl http://localhost:8080/api/v1/admin/configs \
-  -H "Authorization: Bearer your-admin-token"
-```
-
-### 更新配置
-
-```bash
-curl -X PUT http://localhost:8080/api/v1/admin/configs/system.core.log_level \
-  -H "Authorization: Bearer your-admin-token" \
-  -H "Content-Type: application/json" \
-  -d '{"key": "system.core.log_level", "value": "debug"}'
-```
+在管理后台 → 系统设置中，可以可视化管理所有配置项，修改后即时生效（需要重启的配置项会有提示）。
 
 ## 配置文件示例
 

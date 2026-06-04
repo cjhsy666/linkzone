@@ -69,7 +69,7 @@ ecosystems/python/adapters/
 | `is_service` | bool | 否 | `false` | 是否为服务型组件 |
 | `cron` | string | 否 | `""` | 定时任务 Cron 表达式 |
 | `listen_only` | bool | 否 | `false` | 是否仅监听模式（不处理消息） |
-| `permission_level` | number | 否 | `1` | 所需权限等级（0=所有人, 1=普通用户, 5=VIP, 10=管理员） |
+| `permission_level` | number | 否 | `1` | 所需权限等级（1-7，1=普通用户，6=管理员，7=超级管理员） |
 | `tool` | object/null | 否 | `null` | AI 工具定义（适配器一般不用） |
 | `ai_triggerable` | bool | 否 | `false` | 是否可被 AI 触发 |
 | `ai_trigger_usage` | string | 否 | `""` | AI 触发时的用途描述 |

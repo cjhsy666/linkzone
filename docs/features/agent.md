@@ -4,35 +4,9 @@
 
 ## 配置智能体
 
-智能体通过管理 API 或 Web 后台进行配置，配置数据存储在数据库中。
+智能体通过 Web 后台进行配置。打开管理后台 → 智能体管理，即可创建、编辑和管理智能体。
 
-```bash
-# 创建智能体
-curl -X POST http://localhost:8080/api/v1/admin/agents \
-  -H "Content-Type: application/json" \
-  -d '{
-    "id": "default",
-    "config": {
-      "enabled": true,
-      "personality": {
-        "name": "小助手",
-        "custom_identity": "你是一个友好的AI助手",
-        "speech_style": "轻松活泼"
-      },
-      "runtime": {
-        "default": {
-          "model": "deepseek-chat",
-          "temperature": 0.7,
-          "max_tokens": 2048
-        }
-      },
-      "chat": {
-        "talk_value": 0.8,
-        "mentioned_reply": true
-      }
-    }
-  }'
-```
+创建智能体时需要填写基本信息（ID、名称）和各项配置，配置数据保存在数据库中，修改后即时生效。
 
 ## 人设配置（personality）
 
@@ -203,29 +177,4 @@ MCP 服务器配置：
 3. 用户群组上下文偏好
 4. 系统默认智能体
 
-## 通过 API 管理
-
-```bash
-# 创建智能体
-curl -X POST http://localhost:8080/api/v1/admin/agents \
-  -H "Authorization: Bearer your-admin-token" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "id": "my_agent",
-    "config": {
-      "enabled": true,
-      "personality": { "name": "小助手" },
-      "chat": { "talk_value": 0.8 }
-    }
-  }'
-
-# 启用智能体
-curl -X POST http://localhost:8080/api/v1/admin/agents/my_agent/enable \
-  -H "Authorization: Bearer your-admin-token"
-
-# 为群组绑定智能体
-curl -X POST http://localhost:8080/api/v1/admin/agents/my_agent/groups \
-  -H "Authorization: Bearer your-admin-token" \
-  -H "Content-Type: application/json" \
-  -d '{"platform": "qq", "group_id": "group123"}'
-```
+在管理后台中，可以为每个群组绑定或启用指定的智能体。

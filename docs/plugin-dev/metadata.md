@@ -32,7 +32,7 @@
 |------|------|------|--------|------|
 | `priority` | number | 否 | `0` | 优先级，值越小越先执行 |
 | `is_service` | boolean | 否 | `false` | 是否为服务插件 |
-| `permission_level` | number | 否 | `1` | 权限等级要求 |
+| `permission_level` | number | 否 | `1` | 权限等级要求（1-7，6=管理员，7=超级管理员） |
 | `listen_only` | boolean | 否 | `false` | 只听模式，可在只听群触发 |
 | `stage` | number | 否 | `0` | 执行阶段（0=顺序 / 1=并行） |
 | `adapters` | string[] | 否 | `[]` | 限定适配器平台 |

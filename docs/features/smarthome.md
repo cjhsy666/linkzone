@@ -5,21 +5,11 @@ LinkZone 内置智能家居控制模块，通过 Home Assistant 控制设备，�
 ## 前置条件
 
 1. 部署 [Home Assistant](https://www.home-assistant.io/) 并完成设备接入
-2. 通过 API 配置 Home Assistant 连接信息
+2. 在管理后台 → 智能家居中配置 Home Assistant 连接信息
 
-## 配置
-
-通过 API 配置 Home Assistant 连接：
-
-```bash
-curl -X POST http://localhost:8080/api/v1/admin/smarthome/config/hass \
-  -H "Authorization: Bearer your-admin-token" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "url": "http://192.168.1.100:8123",
-    "token": "your-long-lived-access-token"
-  }'
-```
+配置 Home Assistant 连接时需要填写：
+- **URL**：Home Assistant 的访问地址，如 `http://192.168.1.100:8123`
+- **Token**：长期访问令牌
 
 获取长期访问令牌：Home Assistant → 个人资料 → 安全 → 长期访问令牌 → 创建令牌
 
@@ -68,109 +58,41 @@ curl -X POST http://localhost:8080/api/v1/admin/smarthome/config/hass \
 
 框架会自动识别设备名称和操作意图，支持模糊匹配。
 
-### 通过 API
+### 通过管理后台
 
-```bash
-# 控制设备
-curl -X POST http://localhost:8080/api/v1/admin/smarthome/devices/light.living_room/control \
-  -H "Authorization: Bearer your-admin-token" \
-  -H "Content-Type: application/json" \
-  -d '{"action": "turn_on", "data": {"brightness": 200}}'
-
-# 获取设备状态
-curl http://localhost:8080/api/v1/admin/smarthome/devices/light.living_room \
-  -H "Authorization: Bearer your-admin-token"
-
-# 获取所有设备
-curl http://localhost:8080/api/v1/admin/smarthome/devices \
-  -H "Authorization: Bearer your-admin-token"
-
-# 发现设备
-curl -X POST http://localhost:8080/api/v1/admin/smarthome/discover \
-  -H "Authorization: Bearer your-admin-token"
-
-# 按区域获取设备
-curl http://localhost:8080/api/v1/admin/smarthome/devices-grouped \
-  -H "Authorization: Bearer your-admin-token"
-```
+在管理后台 → 智能家居中，可以：
+- 查看所有设备和状态
+- 按区域浏览设备
+- 手动控制设备（开关、调节参数）
+- 发现新设备
 
 ## 区域管理
 
-```bash
-# 获取区域列表
-curl http://localhost:8080/api/v1/admin/smarthome/areas \
-  -H "Authorization: Bearer your-admin-token"
-
-# 创建区域
-curl -X POST http://localhost:8080/api/v1/admin/smarthome/areas \
-  -H "Authorization: Bearer your-admin-token" \
-  -H "Content-Type: application/json" \
-  -d '{"name": "客厅", "icon": "mdi:sofa"}'
-
-# 开启区域所有设备
-curl -X POST http://localhost:8080/api/v1/admin/smarthome/areas/{id}/on \
-  -H "Authorization: Bearer your-admin-token"
-
-# 关闭区域所有设备
-curl -X POST http://localhost:8080/api/v1/admin/smarthome/areas/{id}/off \
-  -H "Authorization: Bearer your-admin-token"
-```
+在管理后台中可以管理 Home Assistant 的区域：
+- 查看区域列表和区域内的设备
+- 创建新区域
+- 一键开启/关闭区域所有设备
 
 ## 自动化
 
-```bash
-# 获取自动化规则
-curl http://localhost:8080/api/v1/admin/smarthome/automations \
-  -H "Authorization: Bearer your-admin-token"
-
-# 创建自动化规则
-curl -X POST http://localhost:8080/api/v1/admin/smarthome/automations \
-  -H "Authorization: Bearer your-admin-token" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "晚上自动开灯",
-    "trigger": {"platform": "time", "at": "18:00"},
-    "action": {"service": "light.turn_on", "target": {"entity_id": "light.living_room"}}
-  }'
-
-# 手动触发自动化
-curl -X POST http://localhost:8080/api/v1/admin/smarthome/automations/{id}/trigger \
-  -H "Authorization: Bearer your-admin-token"
-```
+在管理后台中可以管理 Home Assistant 的自动化规则：
+- 查看所有自动化规则
+- 创建新的自动化规则
+- 手动触发自动化
 
 ## 场景
 
-```bash
-# 获取场景列表
-curl http://localhost:8080/api/v1/admin/smarthome/scenes \
-  -H "Authorization: Bearer your-admin-token"
-
-# 创建场景
-curl -X POST http://localhost:8080/api/v1/admin/smarthome/scenes \
-  -H "Authorization: Bearer your-admin-token" \
-  -H "Content-Type: application/json" \
-  -d '{"name": "观影模式", "actions": [...]}'
-
-# 激活场景
-curl -X POST http://localhost:8080/api/v1/admin/smarthome/scenes/{id}/activate \
-  -H "Authorization: Bearer your-admin-token"
-```
+在管理后台中可以管理 Home Assistant 的场景：
+- 查看场景列表
+- 创建新场景
+- 一键激活场景
 
 ## 健康监控
 
-```bash
-# 获取设备健康状态
-curl http://localhost:8080/api/v1/admin/smarthome/health \
-  -H "Authorization: Bearer your-admin-token"
-
-# 获取不健康设备
-curl http://localhost:8080/api/v1/admin/smarthome/health/unhealthy \
-  -H "Authorization: Bearer your-admin-token"
-
-# 重置设备健康状态
-curl -X POST http://localhost:8080/api/v1/admin/smarthome/health/{entity_id}/reset \
-  -H "Authorization: Bearer your-admin-token"
-```
+管理后台提供设备健康状态监控：
+- 查看所有设备的健康状态
+- 筛选不健康的设备
+- 重置设备健康状态
 
 ## QQ 智能家居面板
 

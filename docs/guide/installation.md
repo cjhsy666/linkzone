@@ -147,14 +147,13 @@ LinkZone 启动时的初始化顺序：
 
 ### 正常关闭
 
-通过 CLI 命令或 API 触发优雅关闭：
+通过 CLI 命令或 Web 后台触发优雅关闭：
 
 ```bash
 # CLI
 > system shutdown
 
-# API
-curl -X POST http://localhost:8080/api/v1/system/shutdown
+# Web 后台：系统管理 → 关闭
 ```
 
 ### 重启
@@ -163,8 +162,7 @@ curl -X POST http://localhost:8080/api/v1/system/shutdown
 # CLI
 > system restart
 
-# API
-curl -X POST http://localhost:8080/api/v1/system/restart
+# Web 后台：系统管理 → 重启
 ```
 
 重启时，框架会优雅关闭所有服务，然后通过 `syscall.Exec` 替换当前进程实现热重启。

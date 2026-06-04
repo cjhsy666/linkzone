@@ -4,7 +4,7 @@
 
 ## 智能体知识库配置
 
-在智能体配置中启用知识库：
+在管理后台 → 智能体管理中，编辑智能体的知识库配置：
 
 ```json
 {
@@ -33,23 +33,11 @@
 
 ### 1. 创建知识库
 
-```bash
-curl -X POST http://localhost:8080/api/v1/admin/knowledge \
-  -H "Authorization: Bearer your-admin-token" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "产品文档",
-    "description": "产品相关文档和FAQ"
-  }'
-```
+在管理后台 → 知识库管理中创建知识库，填写名称和描述。
 
 ### 2. 上传文档
 
-```bash
-curl -X POST http://localhost:8080/api/v1/admin/knowledge/{id}/documents \
-  -H "Authorization: Bearer your-admin-token" \
-  -F "file=@document.pdf"
-```
+在知识库详情页上传文档，支持批量上传。框架会自动分片和向量化。
 
 ### 3. 为智能体绑定知识库
 
@@ -57,18 +45,8 @@ curl -X POST http://localhost:8080/api/v1/admin/knowledge/{id}/documents \
 
 ## 文档管理
 
-```bash
-# 列出文档
-curl http://localhost:8080/api/v1/admin/knowledge/{id}/documents \
-  -H "Authorization: Bearer your-admin-token"
-
-# 删除文档
-curl -X DELETE http://localhost:8080/api/v1/admin/knowledge/{id}/documents/{doc_id} \
-  -H "Authorization: Bearer your-admin-token"
-
-# 搜索知识库
-curl -X POST http://localhost:8080/api/v1/admin/knowledge/{id}/search \
-  -H "Authorization: Bearer your-admin-token" \
-  -H "Content-Type: application/json" \
-  -d '{"query": "如何配置适配器", "top_k": 5}'
-```
+在管理后台 → 知识库管理中，可以：
+- 查看知识库中的文档列表
+- 上传新文档
+- 删除文档
+- 搜索测试（输入查询语句，查看检索结果）
