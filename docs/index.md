@@ -3,7 +3,7 @@ layout: home
 hero:
   name: LinkZone
   text: 多渠道智能机器人框架
-  tagline: QQ / Web / 小智多渠道接入，AI 对话 / 智能家居 / 插件扩展一站式搞定
+  tagline: QQ / Web / 小智等多渠道接入，AI 对话 / 智能家居 / 插件扩展一站式搞定
   actions:
     - theme: brand
       text: 快速开始
