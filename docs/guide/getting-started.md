@@ -6,7 +6,7 @@
 
 - **操作系统**：Linux / macOS / Windows（全平台支持）
 - **架构**：AMD64 / ARM64
-- **Node.js** 16+（用于 Node.js 插件运行时）
+- **Node.js** 16+（可选，用于 Node.js 插件运行时）
 - **Python** 3.8+（可选，用于 Python 插件运行时）
 
 ## 安装
