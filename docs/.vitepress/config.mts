@@ -37,7 +37,9 @@ export default defineConfig({
             { text: '适配器系统', link: '/features/adapter' },
             { text: '智能体配置', link: '/features/agent' },
             { text: '智能家居', link: '/features/smarthome' },
-            { text: '插件系统', link: '/features/plugin' }
+            { text: '插件系统', link: '/features/plugin' },
+            { text: '返利服务', link: '/features/rebate' },
+            { text: '转发服务', link: '/features/forwarder' }
           ]
         }
       ],
@@ -104,7 +106,7 @@ export default defineConfig({
       }
     },
     footer: {
-      message: '基于 MIT 许可发布',
+      message: '基于 MIT 许可发布 | QQ 群：581485581 <a href="https://qm.qq.com/q/jprgeShUpq" target="_blank">点击加入</a>',
       copyright: 'LinkZone Team'
     }
   }
