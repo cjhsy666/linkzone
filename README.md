@@ -50,6 +50,10 @@ linkzone-user-windows-amd64-pure.exe
 
 **其他**：OpenRouter、Ollama（本地模型）
 
+## 交流群
+
+QQ 群：581485581 [点击加入](https://qm.qq.com/q/jprgeShUpq)
+
 ## 许可证
 
 MIT License
