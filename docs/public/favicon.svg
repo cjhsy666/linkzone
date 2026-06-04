@@ -1,0 +1,23 @@
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="favGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00F5FF" />
+      <stop offset="100%" stop-color="#9C5FFF" />
+    </linearGradient>
+  </defs>
+  <circle cx="256" cy="256" r="240" fill="none" stroke="url(#favGrad)" stroke-width="20" opacity="0.3"/>
+  <g transform="translate(256, 256)">
+    <path d="M -140 -140 L -140 110 L -30 110" 
+          stroke="url(#favGrad)" 
+          stroke-width="40" 
+          stroke-linecap="round" 
+          fill="none"/>
+    <path d="M 140 -140 L -30 80 L 140 80" 
+          stroke="url(#favGrad)" 
+          stroke-width="30" 
+          stroke-linecap="round" 
+          stroke-linejoin="round" 
+          fill="none"/>
+    <circle r="35" fill="#00F5FF"/>
+  </g>
+</svg>

@@ -1,0 +1,50 @@
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="mainGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00F5FF" />
+      <stop offset="50%" stop-color="#9C5FFF" />
+      <stop offset="100%" stop-color="#00F5FF" />
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="1.8" result="blur"/>
+      <feComponentTransfer><feFuncA type="linear" slope="1.6"/></feComponentTransfer>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <!-- LZ 主体 -->
+  <g transform="translate(50, 50)" filter="url(#glow)">
+    <!-- L 字母 -->
+    <path d="M -26 -26 V 16 H -10" 
+          stroke="url(#mainGrad)" 
+          stroke-width="5" 
+          stroke-linecap="round" 
+          fill="none"/>
+    <!-- Z 字母 -->
+    <path d="M 26 -26 L -10 26 H 26" 
+          stroke="url(#mainGrad)" 
+          stroke-width="2" 
+          stroke-linecap="square" 
+          fill="none" 
+          opacity="0.7"/>
+    <!-- 中心能量点 -->
+    <circle r="4.5" fill="#00F5FF">
+      <animate attributeName="r" values="4.5; 6; 4.5" dur="2s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="1; 0.7; 1" dur="2s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+  <!-- 无界延伸线 -->
+  <g stroke="url(#mainGrad)" stroke-width="0.6" opacity="0.4">
+    <line x1="14" y1="50" x2="2" y2="50">
+      <animate attributeName="x1" values="14; 2; 14" dur="3s" repeatCount="indefinite"/>
+    </line>
+    <line x1="86" y1="50" x2="98" y2="50">
+      <animate attributeName="x1" values="86; 98; 86" dur="3s" repeatCount="indefinite"/>
+    </line>
+    <line x1="50" y1="14" x2="50" y2="2">
+      <animate attributeName="y1" values="14; 2; 14" dur="3s" repeatCount="indefinite"/>
+    </line>
+    <line x1="50" y1="86" x2="50" y2="98">
+      <animate attributeName="y1" values="86; 98; 86" dur="3s" repeatCount="indefinite"/>
+    </line>
+  </g>
+</svg>
