@@ -125,34 +125,6 @@ LinkZone 的配置文件位于 `data/config.yaml`，采用 YAML 数组格式存�
 
 如果不需要生成外部可访问的 URL，可以留空。
 
-### 许可证配置
-
-#### system.license.key
-
-- **类型**：`string`
-- **默认值**：内置默认密钥（User Edition 开箱即用）
-- **说明**：许可证密钥，用于授权验证。User Edition 内置默认密钥，无需手动配置即可启动。
-
-```yaml
-- key: system.license.key
-  value: "你的许可证密钥"
-  type: string
-  comment: 许可证密钥 (从授权服务器获取)
-```
-
-#### system.license.server_url
-
-- **类型**：`string`
-- **默认值**：`""`（空，使用内置默认地址）
-- **说明**：授权服务器地址。一般不需要配置，框架会使用内置的默认地址。只有在特殊网络环境下才需要手动指定。
-
-```yaml
-- key: system.license.server_url
-  value: "https://license.example.com"
-  type: string
-  comment: '授权服务器地址 (例如: https://license.example.com,一般不需要配置)'
-```
-
 ### 存储配置
 
 #### system.storage.batch_size
@@ -282,7 +254,6 @@ LinkZone 的配置文件位于 `data/config.yaml`，采用 YAML 数组格式存�
 | `system.storage.batch_interval_ms` | 否 | 需重启生效 |
 | `system.runtimes.enabled` | 否 | 需重启生效 |
 | `system.runtimes.config` | 否 | 需重启生效 |
-| `system.license.key` | 否 | 需重启生效 |
 | `system.socket.path` | 否 | 需重启生效 |
 
 ## 通过 Web 后台管理配置
@@ -354,12 +325,7 @@ LinkZone 的配置文件位于 `data/config.yaml`，采用 YAML 数组格式存�
     ]
   type: json
   comment: 外部语言运行时配置
-- key: system.license.key
-  value: "你的许可证密钥"
-  type: string
-  comment: 许可证密钥 (从授权服务器获取)
-- key: system.license.server_url
-  value: ""
-  type: string
-  comment: '授权服务器地址 (例如: https://license.example.com,一般不需要配置)'
-```
+- key: system.runtimes.enabled
+  value: "true"
+  type: bool
+  comment: 是否启用外置组件运行时 (Node.js/Python等, 默认关闭)
