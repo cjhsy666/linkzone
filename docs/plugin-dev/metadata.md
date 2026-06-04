@@ -38,6 +38,21 @@
 | `adapters` | string[] | 否 | `[]` | 限定适配器平台 |
 | `owner` | string | 否 | `"nodejs-runtime"` | 所有者 |
 | `lifecycle_mode` | string | 否 | 自动推断 | 生命周期模式 |
+| `is_public` | boolean | 否 | `false` | 是否公开（公开插件可在市场仓库中展示） |
+| `is_encrypted` | boolean | 否 | `true` | 是否加密（默认加密，设为 `false` 表示开源插件） |
+
+### 市场与发布
+
+| 字段 | 类型 | 必填 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| `market` | boolean | 否 | `false` | 是否来自市场（从市场安装时自动标记，无需手动设置） |
+
+### 配置与监控
+
+| 字段 | 类型 | 必填 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| `config_schema` | object | 否 | `{}` | 插件配置表单定义，用户可在 Web 后台填写 |
+| `enable_metrics` | boolean | 否 | `false` | 是否启用性能指标监控 |
 
 ### AI 触发
 
@@ -56,6 +71,35 @@
 | `"transient"` | 瞬态，按需启动 | 有触发器或事件类型时 |
 | `"persistent"` | 持久，一直运行 | `is_service = true` 时 |
 | `"loaded"` | 只加载，不启动 | 无触发器、非服务时 |
+
+### 注释语法对照
+
+在插件文件头部使用注释声明元信息，框架会自动解析：
+
+| 注释 | 对应字段 | 示例 |
+|------|---------|------|
+| `@name` | name | `@name my-plugin` |
+| `@version` | version | `@version 1.0.0` |
+| `@description` | description | `@description 插件说明` |
+| `@author` | author | `@author LinkZone Team` |
+| `@category` | category | `@category 工具` |
+| `@icon` | icon | `@icon 🌤️` |
+| `@license` | license | `@license MIT` |
+| `@homepage` | homepage | `@homepage https://example.com` |
+| `@tags` | tags | `@tags 天气,查询` |
+| `@dependencies` | dependencies | `@dependencies utils,http` |
+| `@adapters` | adapters | `@adapters qq,web` |
+| `@owner` | owner | `@owner nodejs-runtime` |
+| `@priority` | priority | `@priority 10` |
+| `@permission-level` | permission_level | `@permission-level 1` |
+| `@stage` | stage | `@stage parallel` |
+| `@lifecycle` | lifecycle_mode | `@lifecycle persistent` |
+| `@cron` | cron | `@cron 0 8 * * *` |
+| `@public true` | is_public | `@public true` |
+| `@encrypted false` | is_encrypted | `@encrypted false` |
+| `@listen-only true` | listen_only | `@listen-only true` |
+| `@config-schema` | config_schema | `@config-schema {"key":{"type":"string"}}` |
+| `@tool` | tool | 见 AI 工具插件章节 |
 
 ### 定时任务
 
