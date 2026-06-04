@@ -43,7 +43,7 @@ linkzone-user-windows-amd64.exe
 首次启动时，框架会自动：
 - 创建工作目录（`data/`、`logs/`、`plugins/`、`skills/`、`public/`）
 - 初始化 BadgerDB 存储
-- 解压内置的运行时生态（Node.js / Python SDK）
+- 初始化运行时生态（Node.js / Python）
 - 生成默认配置文件 `data/config.yaml`
 
 ## 部署方式
