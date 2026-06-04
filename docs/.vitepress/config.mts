@@ -38,6 +38,7 @@ export default defineConfig({
             { text: '智能体配置', link: '/features/agent' },
             { text: '智能家居', link: '/features/smarthome' },
             { text: '插件系统', link: '/features/plugin' },
+            { text: '插件市场', link: '/features/market' },
             { text: '返利服务', link: '/features/rebate' },
             { text: '转发服务', link: '/features/forwarder' }
           ]
