@@ -19,102 +19,67 @@
 
 ```
 ecosystems/nodejs/adapters/
-  my-adapter/
-    index.js          # 适配器入口
+  telegram.js          # 适配器入口（直接放在 adapters 目录下）
 ```
+
+> **注意**：适配器文件必须直接放在 `adapters/` 目录下，不支持子目录。与插件不同，插件支持 `plugins/作者名/插件.js` 的子目录结构，但适配器只扫描顶层目录。
 
 ### Python
 
 ```
 ecosystems/python/adapters/
-  my-adapter/
-    __init__.py       # 适配器入口
+  telegram.py          # 适配器入口（直接放在 adapters 目录下）
+  telegram/            # 或以包形式
+    __init__.py        # 适配器入口
 ```
 
-## 元信息完整字段
+> **注意**：Python 适配器支持单文件（`.py`）和包形式（`__init__.py`），但同样只扫描顶层目录。
 
-元信息是适配器注册时提供给框架的描述数据，框架据此识别和管理适配器。
+## 元信息字段
 
-| 字段 | 类型 | 必填 | 默认值 | 说明 |
-|------|------|------|--------|------|
-| `name` | string | **是** | — | 适配器唯一标识，用于框架内部引用，不可重复 |
-| `platform` | string | **是** | `"custom"` | 平台标识，决定消息路由和平台特性识别 |
-| `version` | string | 否 | `"1.0.0"` | 版本号，语义化版本格式 |
-| `type` | string | 否 | `"adapter"` | 组件类型，适配器固定为 `"adapter"` |
-| `description` | string | 否 | `""` | 适配器描述，用于管理后台展示 |
-| `category` | string | 否 | `""` | 分类，如 `"IM"`、`"IoT"`、`"API"` |
-| `author` | string | 否 | `""` | 作者 |
-| `homepage` | string | 否 | `""` | 主页 URL |
-| `license` | string | 否 | `""` | 许可证 |
-| `icon` | string | 否 | `""` | 图标 URL 或名称 |
-| `tags` | string[] | 否 | `[]` | 标签，如 `["qq", "im"]` |
-| `dependencies` | string[] | 否 | `[]` | 依赖的其他组件名称列表 |
-| `priority` | number | 否 | `0` | 优先级，数值越大越优先处理 |
-| `config_schema` | object | 否 | `{}` | 配置项定义，框架据此生成配置界面和校验 |
-| `extra` | object | 否 | `{}` | 扩展字段，存储自定义元数据 |
-| `is_public` | bool | 否 | `false` | 是否公开（市场可见） |
-| `is_encrypted` | bool | 否 | `true` | 代码是否加密 |
-| `file_path` | string | 否 | `""` | 文件路径（框架自动填充） |
-| `market` | bool | 否 | `false` | 是否上架市场 |
-| `enable_metrics` | bool | 否 | `false` | 是否启用性能指标收集 |
-| `enable_health_check` | bool | 否 | `false` | 是否启用健康检查 |
-| `health_check_interval` | string | 否 | `"30s"` | 健康检查间隔 |
-| `enable_cache` | bool | 否 | `false` | 是否启用缓存扩展 |
-| `enable_retry` | bool | 否 | `false` | 是否启用重试扩展 |
-| `lifecycle_mode` | string | 否 | `"persistent"` | 生命周期模式：`persistent`（常驻）、`transient`（临时）、`loaded`（按需加载） |
-| `owner` | string | 否 | `"nodejs-runtime"` / `"python-runtime"` | 所属运行时 |
-| `stage` | number | 否 | `0` | 启动阶段，数值越小越早启动 |
-| `adapters` | string[] | 否 | `[]` | 依赖的适配器列表 |
-| `event_types` | string[] | 否 | `["message"]` | 订阅的事件类型 |
-| `is_service` | bool | 否 | `false` | 是否为服务型组件 |
-| `cron` | string | 否 | `""` | 定时任务 Cron 表达式 |
-| `listen_only` | bool | 否 | `false` | 是否仅监听模式（不处理消息） |
-| `permission_level` | number | 否 | `1` | 所需权限等级（1-7，1=普通用户，6=管理员，7=超级管理员） |
-| `tool` | object/null | 否 | `null` | AI 工具定义（适配器一般不用） |
-| `ai_triggerable` | bool | 否 | `false` | 是否可被 AI 触发 |
-| `ai_trigger_usage` | string | 否 | `""` | AI 触发时的用途描述 |
-| `ai_trigger_format` | string | 否 | `""` | AI 触发时的参数格式描述 |
-| `ai_trigger_args` | object | 否 | `{}` | AI 触发时的参数定义 |
+元信息是适配器注册时提供给框架的描述数据。适配器只需关注以下字段，其余字段框架会自动填充默认值。
 
-### config_schema 详解
+### 必填字段
 
-`config_schema` 定义适配器的可配置项，框架据此生成配置界面和校验规则：
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `name` | string | 适配器唯一标识，不可重复 |
+| `platform` | string | 平台标识，决定消息路由（如 `telegram`、`discord`） |
 
-```javascript
-config_schema: {
-    api_token: {
-        type: 'string',           // 类型：string / number / bool / select
-        label: 'API Token',       // 显示名称
-        default: '',              // 默认值
-        description: '平台 API Token',  // 说明
-        required: true            // 是否必填（可选）
-    },
-    max_retries: {
-        type: 'number',
-        label: '最大重试次数',
-        default: 3,
-        description: 'API 请求最大重试次数'
-    },
-    sandbox: {
-        type: 'bool',
-        label: '沙箱模式',
-        default: false,
-        description: '是否使用沙箱环境'
-    },
-    mode: {
-        type: 'select',
-        label: '运行模式',
-        default: 'websocket',
-        description: '连接方式',
-        options: [
-            { label: 'WebSocket', value: 'websocket' },
-            { label: 'HTTP 长轮询', value: 'long_polling' }
-        ]
-    }
-}
-```
+### 推荐字段
 
-框架会自动为所有组件追加 `log_level` 配置项。
+| 字段 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `version` | string | `"1.0.0"` | 版本号 |
+| `description` | string | `""` | 适配器描述 |
+| `author` | string | `""` | 作者 |
+| `license` | string | `""` | 许可证 |
+| `tags` | string[] | `[]` | 标签 |
+| `priority` | number | `0` | 优先级，数值越大越优先 |
+| `config_schema` | object | `{}` | 配置项定义，框架据此生成配置界面 |
+| `enable_metrics` | bool | `false` | 是否启用性能指标收集 |
+| `enable_health_check` | bool | `false` | 是否启用健康检查 |
+| `health_check_interval` | string | `"30s"` | 健康检查间隔 |
+| `extra` | object | `{}` | 扩展字段 |
+
+### 自动填充字段（无需手动设置）
+
+以下字段框架会自动处理，适配器开发者无需关心：
+
+| 字段 | 说明 |
+|------|------|
+| `type` | 固定为 `"adapter"` |
+| `lifecycle_mode` | 固定为 `"persistent"` |
+| `owner` | 自动设为运行时名称 |
+| `is_service` | 固定为 `false` |
+| `is_public` | 固定为 `false` |
+| `is_encrypted` | 固定为 `true` |
+| `market` | 固定为 `false` |
+| `stage` | 固定为 `0` |
+| `event_types` | 适配器不需要订阅事件 |
+| `triggers` | 适配器不需要触发器 |
+| `tool` / `ai_triggerable` | 适配器不支持 AI 工具 |
+| `cron` / `listen_only` / `permission_level` / `adapters` | 不适用于适配器 |
 
 ## 完整示例
 
@@ -130,32 +95,22 @@ class TelegramAdapter extends Adapter {
             platform: 'telegram',
             version: '1.0.0',
             description: 'Telegram Bot 适配器',
-            category: 'IM',
             author: 'Your Name',
             license: 'MIT',
             tags: ['telegram', 'im'],
-            priority: 80,
-            enable_metrics: true,
-            enable_health_check: true,
-            health_check_interval: '30s',
             config_schema: {
                 bot_token: {
                     type: 'string',
                     label: 'Bot Token',
                     default: '',
-                    description: 'Telegram Bot Token（从 @BotFather 获取）'
+                    description: 'Telegram Bot Token（从 @BotFather 获取）',
+                    required: true
                 },
                 api_base: {
                     type: 'string',
                     label: 'API 地址',
                     default: 'https://api.telegram.org',
                     description: 'Telegram API 地址'
-                },
-                max_connections: {
-                    type: 'number',
-                    label: '最大连接数',
-                    default: 10,
-                    description: 'Webhook 最大连接数'
                 }
             }
         });
@@ -316,20 +271,16 @@ class TelegramAdapter(Adapter):
                 "platform": "telegram",
                 "version": "1.0.0",
                 "description": "Telegram Bot 适配器",
-                "category": "IM",
                 "author": "Your Name",
                 "license": "MIT",
                 "tags": ["telegram", "im"],
-                "priority": 80,
-                "enable_metrics": True,
-                "enable_health_check": True,
-                "health_check_interval": "30s",
                 "config_schema": {
                     "bot_token": {
                         "type": "string",
                         "label": "Bot Token",
                         "default": "",
                         "description": "Telegram Bot Token",
+                        "required": True,
                     },
                     "api_base": {
                         "type": "string",
@@ -496,36 +447,150 @@ create_adapter(TelegramAdapter)
 
 ### 消息段格式
 
-消息段用于表示富文本内容，支持以下类型：
+消息段用于表示富文本内容，格式为 `{ type, data }`。框架会原样将消息段传给适配器的 `send` 方法，由适配器负责将消息段转换为平台原生格式。
+
+#### 消息段类型
+
+| type | 说明 | data 字段 |
+|------|------|-----------|
+| `text` | 纯文本 | `text` |
+| `image` | 图片 | `file` / `url` |
+| `at` | @某人 | `qq` (用户ID) |
+| `reply` | 回复消息 | `id` (消息ID) |
+| `face` | 表情 | `id` (表情ID) |
+| `mface` | 商城表情 | `summary` / `emoji_id` / `emoji_package_id` / `key` |
+| `voice` | 语音 | `file` / `url` |
+| `record` | 录音 | `file` / `url` |
+| `video` | 视频 | `file` / `url` |
+| `file` | 文件 | `file` / `name` |
+| `share` | 链接分享 | `url` / `title` / `content` / `image` |
+| `music` | 音乐卡片 | `title` / `content` / `url` / `audio` / `image` |
+| `json` | JSON卡片 | `data` (JSON字符串) |
+| `xml` | XML卡片 | `data` (XML字符串) / `id` |
+| `forward` | 合并转发 | `id` |
+| `location` | 位置 | `lat` / `lon` / `title` / `content` |
+| `contact` | 推荐好友/群 | `type` (qq/group) / `id` |
+| `buttons` | 按钮卡片 | `title` / `buttons` (数组) |
+| `dice` | 掷骰子 | — |
+| `rps` | 猜拳 | — |
+| `poke` | 戳一戳 | `id` (可选) |
+| `markdown` | Markdown消息 | `content` |
+| `emotion` | 情绪标记 | `emoji` / `emotion` |
+
+#### 消息段降级策略
+
+适配器在 `send` 方法中必须处理平台不支持的消息段类型。推荐策略：
+
+1. **平台原生支持** → 直接转换为平台格式发送
+2. **平台不支持但有近似替代** → 降级为近似类型（如 `music` → 纯文本链接）
+3. **平台完全不支持** → 降级为纯文本描述
 
 ```javascript
-// 文本
-{ type: 'text', data: { text: '你好' } }
+// Node.js 适配器示例：消息段转换与降级
+async send(msg) {
+    const { receiver_id, segments } = msg;
 
-// 图片
-{ type: 'image', data: { url: 'https://example.com/img.png', file: 'https://example.com/img.png' } }
+    if (!segments || segments.length === 0) {
+        // 纯文本消息，直接发送
+        return this._sendText(receiver_id, msg.content);
+    }
 
-// @某人
-{ type: 'at', data: { qq: '123456' } }
+    const platformMessages = [];
 
-// 回复
-{ type: 'reply', data: { id: 'msg-123' } }
+    for (const seg of segments) {
+        switch (seg.type) {
+            // ✅ 平台原生支持的类型：直接转换
+            case 'text':
+                platformMessages.push({ text: seg.data.text });
+                break;
+            case 'image':
+                platformMessages.push({ type: 'photo', media: seg.data.url || seg.data.file });
+                break;
+            case 'at':
+                platformMessages.push({ text: `@${seg.data.qq}` });
+                break;
 
-// 表情
-{ type: 'face', data: { id: '178' } }
+            // ✅ 降级为近似替代
+            case 'music':
+                // 平台不支持音乐卡片 → 降级为文本链接
+                platformMessages.push({
+                    text: `🎵 ${seg.data.title} - ${seg.data.content}\n🔗 ${seg.data.audio || seg.data.url}`
+                });
+                break;
+            case 'share':
+                // 平台不支持链接分享卡片 → 降级为文本
+                platformMessages.push({
+                    text: `${seg.data.title}\n${seg.data.url}`
+                });
+                break;
 
-// 语音
-{ type: 'voice', data: { url: 'https://example.com/voice.silk', file: 'https://example.com/voice.silk' } }
+            // ✅ 完全不支持的类型 → 降级为纯文本描述
+            case 'face':
+            case 'mface':
+                platformMessages.push({ text: `[表情]` });
+                break;
+            case 'json':
+            case 'xml':
+                platformMessages.push({ text: `[卡片消息]` });
+                break;
+            case 'voice':
+                platformMessages.push({ text: `[语音消息]` });
+                break;
+            case 'video':
+                platformMessages.push({ text: `[视频消息]` });
+                break;
+            case 'file':
+                platformMessages.push({ text: `[文件: ${seg.data.name || ''}]` });
+                break;
+            case 'location':
+                platformMessages.push({ text: `[位置: ${seg.data.title || ''}]` });
+                break;
 
-// 视频
-{ type: 'video', data: { url: 'https://example.com/video.mp4', file: 'https://example.com/video.mp4' } }
+            default:
+                // 未知类型 → 忽略或降级为文本
+                if (seg.data?.text) {
+                    platformMessages.push({ text: seg.data.text });
+                }
+                break;
+        }
+    }
 
-// JSON 卡片
-{ type: 'json', data: { data: { ... } } }
-
-// 音乐
-{ type: 'music', data: { type: 'qq', url: '...', audio: '...', title: '...', content: '...', image: '...' } }
+    return this._sendPlatformMessage(receiver_id, platformMessages);
+}
 ```
+
+```python
+# Python 适配器示例：消息段转换与降级
+def send(self, msg):
+    receiver_id = msg.get("receiver_id", "")
+    segments = msg.get("segments", [])
+
+    if not segments:
+        return self._send_text(receiver_id, msg.get("content", ""))
+
+    parts = []
+    for seg in segments:
+        seg_type = seg.get("type", "")
+        data = seg.get("data", {})
+
+        if seg_type == "text":
+            parts.append(data.get("text", ""))
+        elif seg_type == "image":
+            parts.append(f"[图片: {data.get('url', data.get('file', ''))}]")
+        elif seg_type == "music":
+            # 降级为文本
+            parts.append(f"🎵 {data.get('title', '')} - {data.get('content', '')}\n🔗 {data.get('audio', data.get('url', ''))}")
+        elif seg_type == "at":
+            parts.append(f"@{data.get('qq', '')}")
+        else:
+            # 通用降级：尝试提取文本，否则忽略
+            if "text" in data:
+                parts.append(data["text"])
+
+    return self._send_text(receiver_id, "\n".join(parts))
+```
+
+> **提示**：`msg.content` 字段始终包含消息的纯文本内容（由框架自动从消息段提取），可作为降级兜底使用。
 
 ### 数据存储
 
