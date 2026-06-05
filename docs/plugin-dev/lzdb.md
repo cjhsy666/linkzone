@@ -102,6 +102,19 @@ await db.clear();
 await db.clear()
 ```
 
+### 列出所有命名空间
+
+```javascript
+// Node.js（静态方法）
+const namespaces = await LZDB.listNamespaces();
+// 返回: ['my-plugin', 'other-plugin', ...]
+```
+
+```python
+# Python
+namespaces = await LZDB.list_namespaces()
+```
+
 ## 嵌套键
 
 LZDB 支持使用 `:` 分隔的嵌套键：
