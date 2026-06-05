@@ -1,3 +1,5 @@
+<!-- https://xiaoapi.cn -->
+
 # 友情链接
 
 以下是与 LinkZone 相关的优秀项目和社区，欢迎互相推荐。
@@ -19,6 +21,12 @@
 |------|------|------|
 | Home Assistant | 开源智能家居平台，LinkZone 智能家居模块的对接平台 | [home-assistant.io](https://www.home-assistant.io/) |
 | OneBot | 聊天机器人协议标准，LinkZone QQ 适配器基于此协议 | [onebot.dev](https://onebot.dev/) |
+
+## API 服务
+
+| 名称 | 简介 | 地址 |
+|------|------|------|
+| 慕名API | 免费、主打游戏类接口的在线 API 服务，稳定可靠 | [xiaoapi.cn](http://xiaoapi.cn/) |
 
 ## LLM 供应商
 
