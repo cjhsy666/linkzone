@@ -87,12 +87,29 @@ AI 看到用户问"北京天气怎么样"时，会直接调用 `executeTool(ctx,
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | `name` | string | 是 | 参数名 |
-| `type` | string | 是 | 参数类型（string / number / boolean / array） |
+| `type` | string | 是 | 参数类型（string / number / boolean / array / object） |
 | `description` | string | 是 | 参数描述 |
 | `required` | boolean | 是 | 是否必填 |
 | `enum` | string[] | 否 | 可选值列表 |
 | `default` | any | 否 | 默认值 |
 | `example` | string | 否 | 示例值 |
+| `items` | object | 否 | 数组元素类型定义（type=array 时使用） |
+
+#### items 字段（数组类型参数）
+
+当 `type: 'array'` 时，使用 `items` 定义数组元素的类型：
+
+```javascript
+{
+    name: 'cities',
+    type: 'array',
+    description: '城市列表',
+    required: true,
+    items: {
+        type: 'string'  // 数组元素类型
+    }
+}
+```
 
 ## 完整示例
 
@@ -223,26 +240,68 @@ async def query_weather(city, days=1):
 }
 ```
 
-## 工具权限
+### continue 字段说明
 
-工具的 `permission_level` 控制哪些用户可以触发：
+`continue` 控制工具调用后 AI 是否继续推理：
 
-```javascript
-metadata: {
-    permission_level: 5,  // VIP 及以上用户才能通过 AI 调用
-    tool: { ... }
-}
-```
+| 场景 | ToolConfig.continue | ToolResult.continue | 最终行为 |
+|------|-------------------|-------------------|---------|
+| 查询后继续对话 | `true` | 不设置 | AI 继续推理，可能再次调用工具 |
+| 查询后继续对话 | `true` | `false` | AI 不再调用工具，直接回复用户 |
+| 一次性操作 | `false` | 不设置 | AI 不再调用工具 |
+| 一次性操作 | `false` | `true` | AI 继续推理（运行时覆盖） |
+
+**规则**：`ToolResult.continue` 优先级高于 `ToolConfig.continue`。不设置时使用 `ToolConfig` 的默认值。
 
 ## 工具执行上下文
 
 `executeTool` 的 `ctx` 参数提供执行上下文：
 
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `agent_id` | string | 智能体 ID |
+| `user_id` | string | 用户 ID |
+| `user_name` | string | 用户名称 |
+| `group_id` | string | 群组 ID（私聊时为空） |
+| `platform` | string | 平台标识 |
+| `bot_id` | string | 机器人 ID |
+| `extra` | object | 附加数据（含 `session_id`、`task_id` 等） |
+
 ```javascript
 async executeTool(ctx, args) {
     console.log(ctx.agent_id);    // 智能体 ID
     console.log(ctx.user_id);     // 用户 ID
+    console.log(ctx.user_name);   // 用户名称
     console.log(ctx.group_id);    // 群组 ID
     console.log(ctx.platform);    // 平台
+    console.log(ctx.bot_id);      // 机器人 ID
+    console.log(ctx.extra?.session_id);  // 会话 ID
+    console.log(ctx.extra?.task_id);     // 任务 ID
+}
+```
+
+## 工具权限模型
+
+工具的可用性由多级权限控制，框架按以下流程判定：
+
+```
+1. 工具是否启用（enabled）
+2. 运行时等级过滤（取最小值）
+   ├── Agent 等级（AgentToolPolicy.AgentLevel）
+   ├── 用户等级（私聊时）
+   ├── 群组等级（群聊时）
+   └── 任务等级（Extra.task_level）
+3. Agent 策略过滤
+   ├── AllowedPlugins 白名单
+   └── SkillAllowedTools 技能关联工具
+4. 请求级过滤（AllowedToolNames）
+```
+
+`permission_level` 设置插件的最低等级要求，等级不足的用户/群组无法触发该工具：
+
+```javascript
+metadata: {
+    permission_level: 5,  // VIP 及以上用户才能通过 AI 调用
+    tool: { ... }
 }
 ```
