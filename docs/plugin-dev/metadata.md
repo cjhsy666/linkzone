@@ -52,7 +52,12 @@
 | 字段 | 类型 | 必填 | 默认值 | 说明 |
 |------|------|------|--------|------|
 | `config_schema` | object | 否 | `{}` | 插件配置表单定义，用户可在 Web 后台填写 |
-| `enable_metrics` | boolean | 否 | `false` | 是否启用性能指标监控 |
+| `enable_metrics` | boolean | 否 | `false` | 是否启用性能指标监控（执行次数、错误率、平均耗时） |
+| `enable_health_check` | boolean | 否 | `false` | 是否启用健康检查扩展 |
+| `health_check_interval` | string | 否 | `"30s"` | 健康检查间隔（启用健康检查时生效） |
+| `enable_cache` | boolean | 否 | `false` | 是否启用缓存扩展（默认 TTL 5分钟，最大 100 条） |
+| `enable_retry` | boolean | 否 | `false` | 是否启用重试扩展（默认 3 次，100ms~2s 退避） |
+| `extra` | object | 否 | `{}` | 扩展字段，存储自定义元数据 |
 
 ### AI 触发
 
@@ -99,6 +104,10 @@
 | `@encrypted false` | is_encrypted | `@encrypted false` |
 | `@listen-only true` | listen_only | `@listen-only true` |
 | `@config-schema` | config_schema | `@config-schema {"key":{"type":"string"}}` |
+| `@enable-metrics` | enable_metrics | `@enable-metrics true` |
+| `@enable-health-check` | enable_health_check | `@enable-health-check true` |
+| `@enable-cache` | enable_cache | `@enable-cache true` |
+| `@enable-retry` | enable_retry | `@enable-retry true` |
 | `@tool` | tool | 见 AI 工具插件章节 |
 
 ### 定时任务
@@ -106,6 +115,46 @@
 | 字段 | 类型 | 必填 | 默认值 | 说明 |
 |------|------|------|--------|------|
 | `cron` | string | 否 | `""` | Cron 表达式 |
+
+### config_schema 详解
+
+`config_schema` 定义插件的可配置项，框架据此在管理后台生成配置界面：
+
+```javascript
+config_schema: {
+    api_key: {
+        type: 'string',           // 类型：string / number / bool / select
+        label: 'API Key',         // 显示名称
+        default: '',              // 默认值
+        description: '服务 API 密钥',  // 说明
+        required: true            // 是否必填
+    },
+    max_retries: {
+        type: 'number',
+        label: '最大重试次数',
+        default: 3,
+        description: 'API 请求最大重试次数'
+    },
+    sandbox: {
+        type: 'bool',
+        label: '沙箱模式',
+        default: false,
+        description: '是否使用沙箱环境'
+    },
+    mode: {
+        type: 'select',
+        label: '运行模式',
+        default: 'websocket',
+        description: '连接方式',
+        options: [
+            { label: 'WebSocket', value: 'websocket' },
+            { label: 'HTTP 长轮询', value: 'long_polling' }
+        ]
+    }
+}
+```
+
+框架会自动为所有组件追加 `log_level` 配置项。
 
 ## 示例
 
