@@ -143,3 +143,45 @@ metadata: {
     event_types: ['message']
 }
 ```
+
+## 注解式触发器
+
+在注解式插件中，使用注释声明触发器：
+
+### 命令触发
+
+```javascript
+/**
+ * @command /hello
+ */
+```
+
+### 关键词触发
+
+```javascript
+/**
+ * @keyword 天气
+ * @keyword 气温
+ */
+```
+
+### 正则触发
+
+```javascript
+/**
+ * @regex ^\\d{4}-\\d{2}-\\d{2}$
+ */
+```
+
+### 多触发器组合
+
+```javascript
+/**
+ * @command /weather
+ * @keyword 天气
+ * @keyword 气温
+ * @regex 今天.*度
+ */
+```
+
+> 注解式触发器仅支持命令、关键词和正则三种类型。段触发（type: 3）需要使用函数式或类式插件定义。
