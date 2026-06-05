@@ -87,6 +87,22 @@ module.exports = {
 };
 ```
 
+也可使用 `createPlugin` 工厂函数：
+
+```javascript
+const { createPlugin } = require('linkzone-sdk');
+
+module.exports = createPlugin({
+    name: 'hello',
+    version: '1.0.0',
+    description: '问候插件',
+    triggers: [{ type: 0, pattern: '/hello' }],
+    event_types: ['message']
+}, async (sender) => {
+    await sender.reply(`你好，${sender.getSenderName()}！`);
+});
+```
+
 ### Python
 
 ```python
@@ -134,15 +150,32 @@ async def handle_message(sender):
 
 ## 插件生命周期
 
-插件支持以下生命周期钩子：
+插件支持以下生命周期钩子，按调用顺序排列：
 
 | 钩子 | 说明 | Node.js | Python |
 |------|------|---------|--------|
-| 启动 | 插件启动时调用 | `onStart()` | `on_start()` |
-| 停止 | 插件停止时调用 | `onStop()` | `on_stop()` |
+| 加载 | 插件加载时调用（注册、初始化资源） | `onLoad()` | `on_load()` |
+| 启动 | 插件启动时调用（连接服务、开始工作） | `onStart()` | `on_start()` |
+| 重载 | 配置变更时调用（热更新） | `onReload()` | `on_reload()` |
+| 停止 | 插件停止时调用（清理资源） | `onStop()` | `on_stop()` |
+| 卸载 | 插件卸载时调用（释放所有资源） | `onUnload()` | `on_unload()` |
 | 消息处理 | 收到消息时调用 | `handleMessage(sender)` | `handle_message(sender)` |
 | 事件处理 | 收到事件时调用 | `handleEvent(sender)` | `handle_event(sender)` |
 | 定时任务 | Cron 触发时调用 | `onCron()` | `on_cron()` |
+
+### 生命周期流程
+
+```
+加载(onLoad) → 启动(onStart) → [运行中] → 停止(onStop) → 卸载(onUnload)
+                      ↑                ↓
+                      └── 重载(onReload) ┘
+```
+
+- **onLoad**：插件被框架发现并加载时调用，适合做静态资源初始化。此时插件尚未启动，不应执行业务逻辑。
+- **onStart**：插件正式开始工作，可以启动连接、注册定时任务等。
+- **onReload**：运行期间配置变更时调用，可在不重启插件的情况下更新行为。
+- **onStop**：插件被停止时调用，应清理定时器、关闭连接等。
+- **onUnload**：插件被卸载时调用，释放所有资源。之后插件不会再被启动。
 
 ## 插件放置位置
 
@@ -152,10 +185,49 @@ async def handle_message(sender):
 
 修改插件文件后，框架会自动检测变更并重新加载插件，无需重启。
 
+## 错误处理与流程控制
+
+### 消息处理结果
+
+插件 `handleMessage` 的返回值影响后续插件链的执行：
+
+| 返回值 | 行为 |
+|--------|------|
+| `nil` / 无返回 | 继续执行下一个插件 |
+| `ErrNotHandled` | 本插件不处理，继续执行下一个插件 |
+| `ErrStopPropagation` | 停止传播，后续插件不再执行 |
+
+### Sender 流程控制
+
+在消息处理中，可以通过 Sender 方法控制执行流程：
+
+```javascript
+// 中止后续插件执行
+sender.abort();
+
+// 显式继续执行后续插件
+sender.continue();
+```
+
+### AI 工具错误处理
+
+`executeTool` 应返回结构化的 `ToolResult`：
+
+```javascript
+// 成功
+return { success: true, content: '结果文本' };
+
+// 失败
+return { success: false, error: '错误描述' };
+```
+
+框架会根据 `success` 字段决定是否让 AI 继续推理或报告错误。
+
 ## 下一步
 
 - [元信息定义](/plugin-dev/metadata) — 完整的元信息字段说明
 - [触发器](/plugin-dev/triggers) — 各种触发方式详解
 - [Sender API](/plugin-dev/sender-api) — 消息上下文 API
-- [Plugin API](/plugin-dev/plugin-api) — 插件自身 API
+- [Plugin API](/plugin-dev/plugin-api) — 插件自身 API（含扩展系统）
 - [AI 工具插件](/plugin-dev/ai-tool) — 注册 AI 可调用的工具
+- [LZDB 数据库](/plugin-dev/lzdb) — 插件数据存储
