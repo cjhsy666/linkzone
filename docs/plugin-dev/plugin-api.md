@@ -475,7 +475,7 @@ LinkZone.segment.video('https://example.com/video.mp4');
 LinkZone.segment.music('custom', 'https://...', 'https://audio.mp3', '标题', '描述', 'https://cover.png');
 
 // JSON卡片段
-LinkZone.segment.json({ text: '卡片内容' });
+LinkZone.segment.json('{"prompt":"卡片内容"}');
 ```
 
 发送复合消息：
