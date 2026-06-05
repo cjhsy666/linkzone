@@ -17,7 +17,8 @@ export default defineConfig({
       { text: '功能', link: '/features/adapter' },
       { text: '插件开发', link: '/plugin-dev/overview' },
       { text: 'AI 配置', link: '/ai/overview' },
-      { text: 'API', link: '/api/system' }
+      { text: 'API', link: '/api/system' },
+      { text: '友链', link: '/friends' }
     ],
     sidebar: {
       '/guide/': [
