@@ -114,7 +114,7 @@ Sender 是消息上下文对象，在插件处理消息时传入，提供了消�
 | `video` | 视频 | `file` / `url` |
 | `file` | 文件 | `file` / `name` |
 | `share` | 链接分享 | `url` / `title` / `content` / `image` |
-| `music` | 音乐卡片 | `title` / `content` / `url` / `audio` / `image` |
+| `music` | 音乐卡片 | `type` (qq/163/custom/xd) / `title` / `content` / `url` / `audio` / `image` |
 | `json` | JSON卡片 | `data` (JSON字符串) |
 | `xml` | XML卡片 | `data` (XML字符串) / `id` |
 | `forward` | 合并转发 | `id` |
