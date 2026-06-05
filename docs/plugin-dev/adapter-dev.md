@@ -464,7 +464,7 @@ create_adapter(TelegramAdapter)
 | `video` | 视频 | `file` / `url` |
 | `file` | 文件 | `file` / `name` |
 | `share` | 链接分享 | `url` / `title` / `content` / `image` |
-| `music` | 音乐卡片 | `title` / `content` / `url` / `audio` / `image` |
+| `music` | 音乐卡片 | `type` (qq/163/custom/xd) / `title` / `content` / `url` / `audio` / `image` |
 | `json` | JSON卡片 | `data` (JSON字符串) |
 | `xml` | XML卡片 | `data` (XML字符串) / `id` |
 | `forward` | 合并转发 | `id` |
