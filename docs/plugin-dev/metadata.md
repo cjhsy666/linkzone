@@ -53,6 +53,7 @@
 |------|------|------|--------|------|
 | `config_schema` | object | 否 | `{}` | 插件配置表单定义，用户可在 Web 后台填写 |
 | `enable_metrics` | boolean | 否 | `false` | 是否启用性能指标监控（执行次数、错误率、平均耗时） |
+| `autoMetrics` | boolean | 否 | `true` | 是否自动上报消息处理耗时和错误（SDK 内置，默认开启） |
 | `enable_health_check` | boolean | 否 | `false` | 是否启用健康检查扩展 |
 | `health_check_interval` | string | 否 | `"30s"` | 健康检查间隔（启用健康检查时生效） |
 | `enable_cache` | boolean | 否 | `false` | 是否启用缓存扩展（默认 TTL 5分钟，最大 100 条） |
@@ -73,9 +74,9 @@
 
 | 值 | 说明 | 自动推断条件 |
 |-----|------|-------------|
-| `"transient"` | 瞬态，按需启动 | 有触发器或事件类型时 |
+| `"transient"` | 瞬态，按需启动 | 有触发器、事件类型或 cron 时 |
 | `"persistent"` | 持久，一直运行 | `is_service = true` 时 |
-| `"loaded"` | 只加载，不启动 | 无触发器、非服务时 |
+| `"loaded"` | 只加载，不启动 | 无触发器、非服务、无 cron 时 |
 
 ### 注释语法对照
 
@@ -99,6 +100,7 @@
 | `@permission-level` | permission_level | `@permission-level 1` |
 | `@stage` | stage | `@stage parallel` |
 | `@lifecycle` | lifecycle_mode | `@lifecycle persistent` |
+| `@service` | is_service | `@service true` |
 | `@cron` | cron | `@cron 0 8 * * *` |
 | `@public true` | is_public | `@public true` |
 | `@encrypted false` | is_encrypted | `@encrypted false` |
