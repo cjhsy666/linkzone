@@ -9,8 +9,7 @@ LinkZone 支持 Node.js 和 Python 两种语言开发插件。插件通过 SDK �
 ```
 plugins/
   my-plugin/
-    index.js          # 插件入口
-    package.json      # 可选，声明依赖
+    hello.js          # 插件入口
 ```
 
 ### Python 插件
