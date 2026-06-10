@@ -300,22 +300,24 @@ await db.clear()
 
 启用方式：`enable_cache: true`
 
-提供键值缓存，默认 TTL 5 分钟，最大 100 条。
+提供键值缓存，默认 TTL 5 分钟，最大 100 条。缓存由框架侧管理，插件通过 `getData`/`setData` 配合 TTL 策略使用。
+
+> **注意**：`enable_cache` 是框架侧的配置项，SDK 中没有 `cacheGet`/`cacheSet` 方法。如需缓存功能，请使用 `getData`/`setData` 配合自定义 TTL 逻辑，或使用 `LZDB` 存储中间结果。
 
 ```javascript
-// 类式插件中使用
+// 类式插件中使用 getData/setData 实现缓存
 class MyPlugin extends Plugin {
     constructor() {
         super({
             name: 'my-plugin',
             version: '1.0.0',
-            enable_cache: true  // 启用缓存
+            enable_cache: true  // 启用框架侧缓存
         });
     }
 
     async handleMessage(sender) {
         // 读取缓存
-        const cached = this.cacheGet('key');
+        const cached = await this.getData('cache:key');
         if (cached) {
             await sender.reply(cached);
             return;
@@ -323,7 +325,7 @@ class MyPlugin extends Plugin {
 
         const result = await this.fetchData();
         // 写入缓存
-        this.cacheSet('key', result);
+        await this.setData('cache:key', result);
         await sender.reply(result);
     }
 }
@@ -333,7 +335,9 @@ class MyPlugin extends Plugin {
 
 启用方式：`enable_retry: true`
 
-自动为操作添加重试逻辑，默认 3 次重试，退避间隔 100ms~2s。
+自动为操作添加重试逻辑，默认 3 次重试，退避间隔 100ms~2s。重试由框架侧管理。
+
+> **注意**：`enable_retry` 是框架侧的配置项，SDK 中没有 `executeWithRetry` 方法。如需重试逻辑，请手动实现：
 
 ```javascript
 class MyPlugin extends Plugin {
@@ -341,16 +345,24 @@ class MyPlugin extends Plugin {
         super({
             name: 'my-plugin',
             version: '1.0.0',
-            enable_retry: true  // 启用重试
+            enable_retry: true  // 启用框架侧重试
         });
     }
 
     async handleMessage(sender) {
-        // 使用重试包装不稳定操作
-        const err = this.executeWithRetry(async () => {
-            await this.callUnstableAPI();
-        });
-        if (err) {
+        // 手动实现重试逻辑
+        let lastErr;
+        for (let i = 0; i < 3; i++) {
+            try {
+                await this.callUnstableAPI();
+                lastErr = null;
+                break;
+            } catch (e) {
+                lastErr = e;
+                await LinkZone.sleep(Math.min(100 * Math.pow(2, i), 2000));
+            }
+        }
+        if (lastErr) {
             await sender.reply('操作失败，请稍后重试');
         }
     }
@@ -385,16 +397,16 @@ health_check_interval: '30s'
 
 ### 扩展对照表
 
-| 扩展 | 启用字段 | 默认配置 | 可用方法 |
-|------|---------|---------|---------|
-| 缓存 | `enable_cache` | TTL 5min, 最大 100 条 | `cacheGet(key)`, `cacheSet(key, value)` |
-| 重试 | `enable_retry` | 3 次, 100ms~2s 退避 | `executeWithRetry(operation)` |
+| 扩展 | 启用字段 | 默认配置 | 说明 |
+|------|---------|---------|------|
+| 缓存 | `enable_cache` | TTL 5min, 最大 100 条 | 框架侧缓存，插件用 `getData`/`setData` 读写 |
+| 重试 | `enable_retry` | 3 次, 100ms~2s 退避 | 框架侧重试，插件需手动实现重试逻辑 |
 | 性能指标 | `enable_metrics` | 自动收集 | 管理后台查看 |
 | 健康检查 | `enable_health_check` | 30s 间隔 | 管理后台查看 |
 
 ## 配置热更新
 
-插件运行期间配置变更时，框架会调用 `onConfigChanged` 回调：
+插件运行期间可通过 `getConfig()` 主动获取最新配置。当配置变更时，框架会触发热重载（重新加载插件文件），此时插件会经历 `onStop` → 重新加载 → `onStart` 的完整生命周期。
 
 ```javascript
 class MyPlugin extends Plugin {
@@ -412,24 +424,21 @@ class MyPlugin extends Plugin {
         });
     }
 
-    onConfigChanged(key, oldValue, newValue) {
-        if (key === 'api_key') {
-            // API Key 变更，重新初始化客户端
-            this.initClient(newValue);
-        }
+    async onStart() {
+        // 每次启动时读取最新配置
+        const config = await this.getConfig();
+        this.apiKey = config.api_key || '';
+        this.initClient(this.apiKey);
+    }
+
+    async onStop() {
+        // 清理资源
+        this.cleanup();
     }
 }
 ```
 
-也可通过 `onReload` 钩子处理完整重载：
-
-```javascript
-async onReload() {
-    const config = await this.getConfig();
-    this.apiKey = config.api_key;
-    this.initClient(this.apiKey);
-}
-```
+> **注意**：SDK 中没有 `onConfigChanged` 和 `onReload` 钩子。配置变更通过热重载机制处理，插件应在 `onStart` 中读取配置。
 
 ## LinkZone 全局模块
 
@@ -690,4 +699,67 @@ const buckets = await LinkZone.db.listBuckets();
 
 ```javascript
 const result = await LinkZone.call('custom.method', { param: 'value' });
+```
+
+### 返利服务
+
+商品链接转返利链接：
+
+```javascript
+// 淘宝链接转返利
+const result = await LinkZone.rebate.convert('https://item.taobao.com/...');
+
+// 保留原链接转返利
+const result = await LinkZone.rebate.convertPreserve('https://item.taobao.com/...');
+
+// 批量转换
+const results = await LinkZone.rebate.convertBatch('文本中的多个链接...');
+
+// 发布返利信息
+await LinkZone.rebate.publish('返利内容');
+
+// 拼多多链接转返利
+const pddResult = await LinkZone.rebate.pddConvert('https://mobile.yangkeduo.com/...');
+
+// 拼多多返利详情
+const pddDetail = await LinkZone.rebate.pddConvertDetail('https://mobile.yangkeduo.com/...');
+
+// 商品详情
+const detail = await LinkZone.rebate.productDetail('taobao', 'product_id');
+
+// 健康检查
+const health = await LinkZone.rebate.health();
+
+// 统计信息
+const stats = await LinkZone.rebate.stats();
+
+// 返利配置
+const configs = await LinkZone.rebate.config.list();
+const config = await LinkZone.rebate.config.get('taobao');
+await LinkZone.rebate.config.set('taobao', 'key', 'value');
+```
+
+### 跟单服务
+
+订单跟踪与同步：
+
+```javascript
+// 启动/停止跟单服务
+await LinkZone.tracker.start();
+await LinkZone.tracker.stop();
+
+// 查看状态
+const status = await LinkZone.tracker.status();
+
+// 拉取各平台订单
+await LinkZone.tracker.fetchJD(60, '');           // 京东，60分钟间隔
+await LinkZone.tracker.fetchTB(20, '', []);        // 淘宝，20分钟间隔
+await LinkZone.tracker.fetchPDD(1440, '');         // 拼多多，1440分钟间隔
+await LinkZone.tracker.fetchAll(60);               // 全平台，60分钟间隔
+
+// 手动同步
+await LinkZone.tracker.manualSync('jd', '2024-01-01', '2024-01-31');
+
+// 统计信息
+const stats = await LinkZone.tracker.stats();
 ```
