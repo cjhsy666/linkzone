@@ -44,7 +44,7 @@ metadata: {
 }
 ```
 
-AI 看到用户问"北京天气怎么样"时，会直接调用 `executeTool(ctx, { city: '北京', days: 1 })`。
+AI 看到用户问"北京天气怎么样"时，会直接调用 `executeTool(sender, { city: '北京', days: 1 })`。
 
 ### 如何选择
 
@@ -175,7 +175,7 @@ module.exports = {
         const result = await this.queryWeather(city);
         await sender.reply(result);
     },
-    async executeTool(ctx, args) {
+    async executeTool(sender, args) {
         const { city, days } = args;
         const result = await this.queryWeather(city, days);
         return {
@@ -216,7 +216,7 @@ async def handle_message(sender):
     result = await query_weather(city)
     await sender.reply(result)
 
-async def execute_tool(ctx, args):
+async def execute_tool(sender, args):
     city = args["city"]
     days = args.get("days", 1)
     result = await query_weather(city, days)
@@ -255,30 +255,29 @@ async def query_weather(city, days=1):
 
 ## 工具执行上下文
 
-`executeTool` 的 `ctx` 参数提供执行上下文：
-
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| `agent_id` | string | 智能体 ID |
-| `user_id` | string | 用户 ID |
-| `user_name` | string | 用户名称 |
-| `group_id` | string | 群组 ID（私聊时为空） |
-| `platform` | string | 平台标识 |
-| `bot_id` | string | 机器人 ID |
-| `extra` | object | 附加数据（含 `session_id`、`task_id` 等） |
+`executeTool` 的第一个参数是 `Sender` 实例（与 `handleMessage` 中的 sender 相同），当没有消息上下文时为 `null`：
 
 ```javascript
-async executeTool(ctx, args) {
-    console.log(ctx.agent_id);    // 智能体 ID
-    console.log(ctx.user_id);     // 用户 ID
-    console.log(ctx.user_name);   // 用户名称
-    console.log(ctx.group_id);    // 群组 ID
-    console.log(ctx.platform);    // 平台
-    console.log(ctx.bot_id);      // 机器人 ID
-    console.log(ctx.extra?.session_id);  // 会话 ID
-    console.log(ctx.extra?.task_id);     // 任务 ID
+async executeTool(sender, args) {
+    if (sender) {
+        // 有消息上下文时，可获取发送者信息
+        const senderId = sender.getSenderId();
+        const senderName = sender.getSenderName();
+        const groupId = sender.getGroupId();
+        const platform = sender.getPlatform();
+        // 可通过 sender 回复用户
+        await sender.reply('工具执行完成');
+    } else {
+        // 无消息上下文（如定时触发）
+    }
+
+    // args 是 AI 传入的结构化参数
+    console.log(args.city);   // 城市名
+    console.log(args.days);   // 天数
 }
 ```
+
+> **注意**：`sender` 参数可能为 `null`（当工具不是由消息触发时），使用前务必做空值检查。
 
 ## 工具权限模型
 
