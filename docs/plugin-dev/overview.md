@@ -154,28 +154,34 @@ async def handle_message(sender):
 
 | 钩子 | 说明 | Node.js | Python |
 |------|------|---------|--------|
-| 加载 | 插件加载时调用（注册、初始化资源） | `onLoad()` | `on_load()` |
 | 启动 | 插件启动时调用（连接服务、开始工作） | `onStart()` | `on_start()` |
-| 重载 | 配置变更时调用（热更新） | `onReload()` | `on_reload()` |
 | 停止 | 插件停止时调用（清理资源） | `onStop()` | `on_stop()` |
-| 卸载 | 插件卸载时调用（释放所有资源） | `onUnload()` | `on_unload()` |
 | 消息处理 | 收到消息时调用 | `handleMessage(sender)` | `handle_message(sender)` |
 | 事件处理 | 收到事件时调用 | `handleEvent(sender)` | `handle_event(sender)` |
 | 定时任务 | Cron 触发时调用 | `onCron()` | `on_cron()` |
 
 ### 生命周期流程
 
+根据 `lifecycle_mode` 不同，生命周期流程有所区别：
+
+**persistent 模式**（常驻运行）：
 ```
-加载(onLoad) → 启动(onStart) → [运行中] → 停止(onStop) → 卸载(onUnload)
-                      ↑                ↓
-                      └── 重载(onReload) ┘
+注册 → 启动(onStart) → [运行中] → 停止(onStop)
 ```
 
-- **onLoad**：插件被框架发现并加载时调用，适合做静态资源初始化。此时插件尚未启动，不应执行业务逻辑。
-- **onStart**：插件正式开始工作，可以启动连接、注册定时任务等。
-- **onReload**：运行期间配置变更时调用，可在不重启插件的情况下更新行为。
+**transient 模式**（按需触发）：
+```
+注册 → [等待触发] → handleMessage → [等待下次触发]
+```
+
+**loaded 模式**（仅注册元信息）：
+```
+注册 → [不启动、不触发]
+```
+
+- **onStart**：插件正式开始工作，可以启动连接、注册定时任务等。仅在 `persistent` 模式下被调用。
 - **onStop**：插件被停止时调用，应清理定时器、关闭连接等。
-- **onUnload**：插件被卸载时调用，释放所有资源。之后插件不会再被启动。
+- **onCron**：定时任务触发时调用。
 
 ## 插件放置位置
 
@@ -189,24 +195,18 @@ async def handle_message(sender):
 
 ### 消息处理结果
 
-插件 `handleMessage` 的返回值影响后续插件链的执行：
-
-| 返回值 | 行为 |
-|--------|------|
-| `nil` / 无返回 | 继续执行下一个插件 |
-| `ErrNotHandled` | 本插件不处理，继续执行下一个插件 |
-| `ErrStopPropagation` | 停止传播，后续插件不再执行 |
+插件 `handleMessage` 的返回值不影响后续插件链的执行。框架在消息处理完成后始终标记为已处理。
 
 ### Sender 流程控制
 
-在消息处理中，可以通过 Sender 方法控制执行流程：
+在消息处理中，可以通过 Sender 方法控制执行流程（均为异步方法，需 `await`）：
 
 ```javascript
 // 中止后续插件执行
-sender.abort();
+await sender.abort();
 
 // 显式继续执行后续插件
-sender.continue();
+await sender.continue();
 ```
 
 ### AI 工具错误处理
