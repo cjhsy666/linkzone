@@ -89,7 +89,7 @@ Sender 是消息上下文对象，在插件处理消息时传入，提供了消�
 |------|------|------|---------|--------|
 | 回复消息 | 是 | 发送文本回复，返回消息 ID | `await reply(content)` | `await reply(content)` |
 | 批量回复 | 是 | 发送多条消息 | `await replyBatch(messages)` | `await reply_batch(messages)` |
-| 撤回消息 | 是 | 撤回指定消息（可设延迟） | `await recallMessage(id?, delay?)` | `await recall_message(id?, delay?)` |
+| 撤回消息 | 是 | 撤回消息（不传 id 则撤回当前消息，可设延迟） | `await recallMessage(id?, delay?)` | `await recall_message(id?, delay?)` |
 
 > `reply()` 返回消息 ID 字符串，可用于后续撤回。`content` 支持字符串、消息段对象或消息段数组，详见[消息段](#消息段)。
 
@@ -220,9 +220,9 @@ await sender.reply([
 | 方法 | 异步 | 说明 | Node.js | Python |
 |------|------|------|---------|--------|
 | 获取参数 | 是 | 获取命令参数（按索引，空格分割） | `await param(index)` | `await param(index)` |
-| 获取所有参数 | 是 | 获取所有命令参数 | `await getAllParams()` | `await get_all_params()` |
-| 中止处理 | 否 | 中止后续插件执行 | `abort()` | `abort()` |
-| 继续处理 | 否 | 继续执行后续插件 | `continue()` | `continue()` |
+| 获取所有参数 | 是 | 获取所有命令参数（返回对象） | `await getAllParams()` | `await get_all_params()` |
+| 中止处理 | 是 | 中止后续插件执行 | `await abort()` | `await abort()` |
+| 继续处理 | 是 | 继续执行后续插件 | `await continue()` | `await continue()` |
 
 #### 参数解析规则
 
@@ -297,8 +297,8 @@ async handleMessage(sender) {
 async handleMessage(sender) {
     const confirmed = await sender.askConfirm(
         '确定要执行此操作吗？',
-        ['是', '确定', 'yes'],
-        ['否', '取消', 'no'],
+        ['是', 'yes', 'y', '确认'],
+        ['否', 'no', 'n', '取消'],
         15000
     );
     if (confirmed) {
