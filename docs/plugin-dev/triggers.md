@@ -169,7 +169,7 @@ metadata: {
 
 ```javascript
 /**
- * @regex ^\\d{4}-\\d{2}-\\d{2}$
+ * @rule ^\\d{4}-\\d{2}-\\d{2}$
  */
 ```
 
@@ -180,8 +180,30 @@ metadata: {
  * @command /weather
  * @keyword 天气
  * @keyword 气温
- * @regex 今天.*度
+ * @rule 今天.*度
  */
 ```
 
-> 注解式触发器仅支持命令、关键词和正则三种类型。段触发（type: 3）需要使用函数式或类式插件定义。
+### 段触发
+
+段触发也支持注解式定义，使用 `@segment` 注解：
+
+```javascript
+/**
+ * @segment image
+ * @segment image.url=example\\.com
+ * @segment image.url~https?://
+ * @segment image|example\\.com
+ */
+```
+
+`@segment` 语法格式：
+
+| 格式 | 说明 | 示例 |
+|------|------|------|
+| `@segment <type>` | 匹配指定段类型 | `@segment image` |
+| `@segment <type>.<field>=<pattern>` | 段类型 + 指定字段精确匹配 | `@segment image.url=example.com` |
+| `@segment <type>.<field>~<pattern>` | 段类型 + 指定字段正则匹配 | `@segment image.url~https?://` |
+| `@segment <type>\|<pattern>` | 段类型 + 显示文本正则匹配 | `@segment image\|example\\.com` |
+
+> 注解式触发器支持命令（`@command`）、关键词（`@keyword`）、正则（`@rule`）和段匹配（`@segment`）四种类型。
