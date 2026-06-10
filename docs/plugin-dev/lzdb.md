@@ -105,10 +105,12 @@ await db.clear()
 ### 列出所有命名空间
 
 ```javascript
-// Node.js（静态方法）
-const namespaces = await LZDB.listNamespaces();
+// Node.js（静态方法，需要传入 client 参数）
+const namespaces = await LZDB.listNamespaces(this.client);
 // 返回: ['my-plugin', 'other-plugin', ...]
 ```
+
+> **注意**：`LZDB.listNamespaces(client)` 是静态方法，必须传入 `client` 参数。在插件中可通过 `this.client` 获取。
 
 ```python
 # Python
