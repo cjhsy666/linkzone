@@ -246,15 +246,10 @@ module.exports = {
 
 ## Python 插件示例
 
+### 类式插件
+
 ```python
 # ecosystems/python/plugins/hello/hello.py
-"""
-@name hello
-@version 1.0.0
-@description Python 问候插件
-@command /hello_py
-"""
-
 from linkzone import Plugin, create_plugin
 
 class HelloPlugin(Plugin):
@@ -269,7 +264,23 @@ class HelloPlugin(Plugin):
 
     async def handle_message(self, sender):
         name = sender.get_sender_name()
-        await sender.reply(f"你好，{name}！这是来自 Python 插件的问候 🐍")
+        await sender.reply(f"你好，{name}！这是来自 Python 插件的问候")
 
 create_plugin(HelloPlugin)
+```
+
+### 函数式插件（注解式元信息）
+
+```python
+# ecosystems/python/plugins/echo/echo.py
+"""
+@name echo_py
+@version 1.0.0
+@description Python 回声插件
+@command /echo_py
+"""
+
+async def handle_message(sender):
+    text = await sender.param(0)
+    await sender.reply(text or "请输入内容")
 ```
