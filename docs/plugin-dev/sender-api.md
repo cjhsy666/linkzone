@@ -21,6 +21,7 @@ Sender 是消息上下文对象，在插件处理消息时传入，提供了消�
 | `extra` | object | 附加数据 |
 | `timestamp` | number | 时间戳 |
 | `permission_level` | number | 用户权限等级 |
+| `linkzone_id` | string | 用户全局 ID |
 | `is_group` | boolean | 是否群聊 |
 | `is_private` | boolean | 是否私聊 |
 
@@ -39,6 +40,7 @@ Sender 是消息上下文对象，在插件处理消息时传入，提供了消�
 | 获取消息 ID | 获取消息唯一标识 | `getMessageId()` | `get_message_id()` |
 | 获取机器人 ID | 获取当前机器人标识 | `getBotId()` | `get_bot_id()` |
 | 获取接收者 ID | 获取接收者标识 | `getReceiverId()` | `get_receiver_id()` |
+| 获取 LinkZone ID | 获取用户全局 ID | `getLinkZoneID()` | `get_linkzone_id()` |
 
 ### 身份判断
 
@@ -47,6 +49,27 @@ Sender 是消息上下文对象，在插件处理消息时传入，提供了消�
 | 是否管理员 | 否 | 判断发送者是否管理员（permission_level >= 6） | `isAdmin()` | `is_admin()` |
 | 是否群聊 | 否 | 判断是否群聊消息 | `isGroup()` | `is_group()` |
 | 是否私聊 | 否 | 判断是否私聊消息 | `isPrivate()` | `is_private()` |
+
+### 等级与状态
+
+| 方法 | 异步 | 说明 | Node.js | Python |
+|------|------|------|---------|--------|
+| 获取用户等级 | 是 | 获取用户等级 | `await getUserLevel()` | `await get_user_level()` |
+| 获取用户状态 | 是 | 获取用户状态 | `await getUserStatus()` | `await get_user_status()` |
+| 获取群组等级 | 是 | 获取群组等级 | `await getGroupLevel()` | `await get_group_level()` |
+
+返回值格式：
+
+```javascript
+// getUserLevel()
+{ level: "Lv5", levelInt: 5 }
+
+// getUserStatus()
+{ status: "active", statusInt: 1 }
+
+// getGroupLevel()
+{ level: "Lv3", levelInt: 3 }
+```
 
 ### 消息前缀
 
@@ -254,7 +277,6 @@ await sender.reply([
 
 | 方法 | 异步 | 说明 | Node.js | Python |
 |------|------|------|---------|--------|
-| 获取 LinkZone ID | 是 | 获取用户全局 ID | `await getLinkZoneID()` | `await get_linkzone_id()` |
 | 获取用户信息 | 是 | 获取用户详细信息 | `await getUserInfo()` | `await get_user_info()` |
 
 ## 使用示例
@@ -313,9 +335,10 @@ async handleMessage(sender) {
 
 ```javascript
 async handleMessage(sender) {
-    const lzId = await sender.getLinkZoneID();
+    const lzId = sender.getLinkZoneID();
     const userInfo = await sender.getUserInfo();
-    await sender.reply(`你的全局 ID: ${lzId}\n等级: ${userInfo.level}`);
+    const { level } = await sender.getUserLevel();
+    await sender.reply(`你的全局 ID: ${lzId}\n等级: ${level}`);
 }
 ```
 
