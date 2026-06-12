@@ -38,26 +38,14 @@
 | `adapters` | string[] | 否 | `[]` | 限定适配器平台 |
 | `owner` | string | 否 | `"nodejs-runtime"` | 所有者 |
 | `lifecycle_mode` | string | 否 | 自动推断 | 生命周期模式 |
-| `is_public` | boolean | 否 | `false` | 是否公开（公开插件可在市场仓库中展示） |
+| `is_public` | boolean | 否 | `false` | 是否上架插件市场 |
 | `is_encrypted` | boolean | 否 | `true` | 是否加密（默认加密，设为 `false` 表示开源插件） |
-
-### 市场与发布
-
-| 字段 | 类型 | 必填 | 默认值 | 说明 |
-|------|------|------|--------|------|
-| `market` | boolean | 否 | `false` | 是否来自市场（从市场安装时自动标记，无需手动设置） |
 
 ### 配置与监控
 
 | 字段 | 类型 | 必填 | 默认值 | 说明 |
 |------|------|------|--------|------|
 | `config_schema` | object | 否 | `{}` | 插件配置表单定义，用户可在 Web 后台填写 |
-| `enable_metrics` | boolean | 否 | `false` | 是否启用性能指标监控（执行次数、错误率、平均耗时） |
-| `autoMetrics` | boolean | 否 | `true` | 是否自动上报消息处理耗时和错误（SDK 内置，默认开启） |
-| `enable_health_check` | boolean | 否 | `false` | 是否启用健康检查扩展 |
-| `health_check_interval` | string | 否 | `"30s"` | 健康检查间隔（启用健康检查时生效） |
-| `enable_cache` | boolean | 否 | `false` | 是否启用缓存扩展（默认 TTL 5分钟，最大 100 条） |
-| `enable_retry` | boolean | 否 | `false` | 是否启用重试扩展（默认 3 次，100ms~2s 退避） |
 | `extra` | object | 否 | `{}` | 扩展字段，存储自定义元数据 |
 
 ### AI 触发
@@ -106,10 +94,6 @@
 | `@encrypted false` | is_encrypted | `@encrypted false` |
 | `@listen-only true` | listen_only | `@listen-only true` |
 | `@config-schema` | config_schema | `@config-schema {"key":{"type":"string"}}` |
-| `@enable-metrics` | enable_metrics | `@enable-metrics true` |
-| `@enable-health-check` | enable_health_check | `@enable-health-check true` |
-| `@enable-cache` | enable_cache | `@enable-cache true` |
-| `@enable-retry` | enable_retry | `@enable-retry true` |
 | `@tool` | tool | 见 AI 工具插件章节 |
 
 ### 定时任务
