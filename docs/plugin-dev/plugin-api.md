@@ -294,80 +294,7 @@ await db.clear()
 
 ## 扩展系统
 
-插件可以通过元信息字段启用内置扩展，获得缓存、重试、监控等能力，无需手动实现。
-
-### 缓存扩展
-
-启用方式：`enable_cache: true`
-
-提供键值缓存，默认 TTL 5 分钟，最大 100 条。缓存由框架侧管理，插件通过 `getData`/`setData` 配合 TTL 策略使用。
-
-> **注意**：`enable_cache` 是框架侧的配置项，SDK 中没有 `cacheGet`/`cacheSet` 方法。如需缓存功能，请使用 `getData`/`setData` 配合自定义 TTL 逻辑，或使用 `LZDB` 存储中间结果。
-
-```javascript
-// 类式插件中使用 getData/setData 实现缓存
-class MyPlugin extends Plugin {
-    constructor() {
-        super({
-            name: 'my-plugin',
-            version: '1.0.0',
-            enable_cache: true  // 启用框架侧缓存
-        });
-    }
-
-    async handleMessage(sender) {
-        // 读取缓存
-        const cached = await this.getData('cache:key');
-        if (cached) {
-            await sender.reply(cached);
-            return;
-        }
-
-        const result = await this.fetchData();
-        // 写入缓存
-        await this.setData('cache:key', result);
-        await sender.reply(result);
-    }
-}
-```
-
-### 重试扩展
-
-启用方式：`enable_retry: true`
-
-自动为操作添加重试逻辑，默认 3 次重试，退避间隔 100ms~2s。重试由框架侧管理。
-
-> **注意**：`enable_retry` 是框架侧的配置项，SDK 中没有 `executeWithRetry` 方法。如需重试逻辑，请手动实现：
-
-```javascript
-class MyPlugin extends Plugin {
-    constructor() {
-        super({
-            name: 'my-plugin',
-            version: '1.0.0',
-            enable_retry: true  // 启用框架侧重试
-        });
-    }
-
-    async handleMessage(sender) {
-        // 手动实现重试逻辑
-        let lastErr;
-        for (let i = 0; i < 3; i++) {
-            try {
-                await this.callUnstableAPI();
-                lastErr = null;
-                break;
-            } catch (e) {
-                lastErr = e;
-                await LinkZone.sleep(Math.min(100 * Math.pow(2, i), 2000));
-            }
-        }
-        if (lastErr) {
-            await sender.reply('操作失败，请稍后重试');
-        }
-    }
-}
-```
+插件可以通过元信息字段启用内置扩展，获得监控等能力，无需手动实现。
 
 ### 性能指标扩展
 
@@ -375,34 +302,11 @@ class MyPlugin extends Plugin {
 
 自动收集插件执行次数、错误率、平均耗时等指标，可在管理后台查看。
 
-### 健康检查扩展
-
-启用方式：`enable_health_check: true`
-
-定期检查组件健康状态，默认间隔 30 秒。可自定义检查逻辑：
-
-```javascript
-// 适配器中自定义健康检查
-enable_health_check: true,
-health_check_interval: '30s'
-```
-
-框架默认检查组件运行状态，适配器可覆盖检查逻辑（如检查外部连接是否存活）。
-
-### 事件追踪扩展
-
-事件追踪扩展记录插件处理的每次事件，包括时间戳、类型、耗时、成功状态等。适用于调试和性能分析。
-
-> 事件追踪扩展目前仅供框架内部使用，暂不对外开放启用接口。
-
 ### 扩展对照表
 
-| 扩展 | 启用字段 | 默认配置 | 说明 |
-|------|---------|---------|------|
-| 缓存 | `enable_cache` | TTL 5min, 最大 100 条 | 框架侧缓存，插件用 `getData`/`setData` 读写 |
-| 重试 | `enable_retry` | 3 次, 100ms~2s 退避 | 框架侧重试，插件需手动实现重试逻辑 |
-| 性能指标 | `enable_metrics` | 自动收集 | 管理后台查看 |
-| 健康检查 | `enable_health_check` | 30s 间隔 | 管理后台查看 |
+| 扩展 | 启用字段 | 说明 |
+|------|---------|------|
+| 性能指标 | `enable_metrics` | 自动收集，管理后台查看 |
 
 ## 配置热更新
 
@@ -545,9 +449,6 @@ await LinkZone.event.unsubscribe('custom_event');
 LinkZone.event.on((event) => {
     console.log('收到事件:', event);
 });
-
-// 发布事件
-await LinkZone.event.emit('custom_event', { key: 'value' });
 ```
 
 ### HTTP 路由
@@ -643,12 +544,6 @@ const user = await LinkZone.user.getOrCreate('qq', 'platform_uid', '显示名');
 
 // 获取用户信息
 const info = await LinkZone.user.getInfo(linkzoneId);
-
-// 更新用户资料
-await LinkZone.user.updateProfile(linkzoneId, { avatar_url: '...' });
-
-// 设置用户角色等级
-await LinkZone.user.setRole(linkzoneId, 5);
 ```
 
 ### 日志
@@ -699,67 +594,4 @@ const buckets = await LinkZone.db.listBuckets();
 
 ```javascript
 const result = await LinkZone.call('custom.method', { param: 'value' });
-```
-
-### 返利服务
-
-商品链接转返利链接：
-
-```javascript
-// 淘宝链接转返利
-const result = await LinkZone.rebate.convert('https://item.taobao.com/...');
-
-// 保留原链接转返利
-const result = await LinkZone.rebate.convertPreserve('https://item.taobao.com/...');
-
-// 批量转换
-const results = await LinkZone.rebate.convertBatch('文本中的多个链接...');
-
-// 发布返利信息
-await LinkZone.rebate.publish('返利内容');
-
-// 拼多多链接转返利
-const pddResult = await LinkZone.rebate.pddConvert('https://mobile.yangkeduo.com/...');
-
-// 拼多多返利详情
-const pddDetail = await LinkZone.rebate.pddConvertDetail('https://mobile.yangkeduo.com/...');
-
-// 商品详情
-const detail = await LinkZone.rebate.productDetail('taobao', 'product_id');
-
-// 健康检查
-const health = await LinkZone.rebate.health();
-
-// 统计信息
-const stats = await LinkZone.rebate.stats();
-
-// 返利配置
-const configs = await LinkZone.rebate.config.list();
-const config = await LinkZone.rebate.config.get('taobao');
-await LinkZone.rebate.config.set('taobao', 'key', 'value');
-```
-
-### 跟单服务
-
-订单跟踪与同步：
-
-```javascript
-// 启动/停止跟单服务
-await LinkZone.tracker.start();
-await LinkZone.tracker.stop();
-
-// 查看状态
-const status = await LinkZone.tracker.status();
-
-// 拉取各平台订单
-await LinkZone.tracker.fetchJD(60, '');           // 京东，60分钟间隔
-await LinkZone.tracker.fetchTB(20, '', []);        // 淘宝，20分钟间隔
-await LinkZone.tracker.fetchPDD(1440, '');         // 拼多多，1440分钟间隔
-await LinkZone.tracker.fetchAll(60);               // 全平台，60分钟间隔
-
-// 手动同步
-await LinkZone.tracker.manualSync('jd', '2024-01-01', '2024-01-31');
-
-// 统计信息
-const stats = await LinkZone.tracker.stats();
 ```
