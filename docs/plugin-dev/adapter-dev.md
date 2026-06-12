@@ -57,9 +57,6 @@ ecosystems/python/adapters/
 | `tags` | string[] | `[]` | 标签 |
 | `priority` | number | `0` | 优先级，数值越大越优先 |
 | `config_schema` | object | `{}` | 配置项定义，框架据此生成配置界面 |
-| `enable_metrics` | bool | `false` | 是否启用性能指标收集 |
-| `enable_health_check` | bool | `false` | 是否启用健康检查 |
-| `health_check_interval` | string | `"30s"` | 健康检查间隔 |
 | `extra` | object | `{}` | 扩展字段 |
 
 ### 自动填充字段（无需手动设置）
@@ -74,7 +71,6 @@ ecosystems/python/adapters/
 | `is_service` | 固定为 `false` |
 | `is_public` | 固定为 `false` |
 | `is_encrypted` | 固定为 `true` |
-| `market` | 固定为 `false` |
 | `stage` | 固定为 `0` |
 | `event_types` | 适配器不需要订阅事件 |
 | `triggers` | 适配器不需要触发器 |
@@ -431,19 +427,20 @@ create_adapter(TelegramAdapter)
 |------|------|------|------|
 | `type` | string | 否 | 事件类型，默认 `"message"` |
 | `platform` | string | 否 | 平台标识，默认使用元信息中的 `platform` |
-| `bot_id` | string | 否 | 机器人 ID |
+| `botId` | string | 否 | 机器人 ID |
 | `timestamp` | number | 否 | 时间戳，默认当前时间 |
-| `sender_id` | string | **是** | 发送者 ID |
-| `sender_name` | string | 否 | 发送者名称 |
-| `receiver_id` | string | **是** | 接收者 ID |
-| `receiver_type` | string | 否 | `private` 或 `group` |
-| `group_id` | string | 否 | 群 ID（群聊时设置） |
-| `group_name` | string | 否 | 群名称 |
+| `senderId` | string | **是** | 发送者 ID |
+| `senderName` | string | 否 | 发送者名称 |
+| `receiverId` | string | **是** | 接收者 ID |
+| `groupId` | string | 否 | 群 ID（群聊时设置，设置后 receiverType 自动推断为 group） |
+| `groupName` | string | 否 | 群名称 |
 | `message` | string | **是** | 消息文本 |
 | `segments` | array | 否 | 消息段 |
-| `message_id` | string | 否 | 消息 ID |
-| `sub_type` | string | 否 | 子类型 |
+| `messageId` | string | 否 | 消息 ID |
+| `subType` | string | 否 | 子类型 |
 | `extra` | object | 否 | 附加数据 |
+
+> **Python 适配器**：Python SDK 的 `push_event` 使用 snake_case 字段名（`sender_id`、`sender_name`、`receiver_id`、`group_id`、`group_name`、`message_id`、`sub_type`、`bot_id`）。
 
 ### 消息段格式
 
