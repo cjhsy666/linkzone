@@ -188,7 +188,7 @@ async def handle_message(sender):
 
 ## 热重载
 
-修改插件文件后，框架会自动检测变更并重新加载插件，无需重启。
+插件文件修改后框架自动检测并重新加载，无需重启。如需禁用，设置环境变量 `LINKZONE_HOT_RELOAD=false`。
 
 ## 错误处理与流程控制
 
