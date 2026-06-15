@@ -1,306 +1,254 @@
 # AI 工具插件
 
-AI 工具插件允许智能体在对话中自动调用插件功能。当用户的需求匹配工具描述时，LLM 会自动选择并调用对应工具。
+LinkZone 支持将插件注册为 AI 工具，让 AI 模型可以主动调用插件功能。有两种模式：**注入调用**和**直接调用**。
 
-## 两种调用模式
+## 注入调用模式
 
-### 注入调用（Injectable）
+AI 在处理消息时，根据触发规则将命令注入到消息流中，触发对应的插件。
 
-适合已有命令式插件，只需设置 `ai_triggerable: true`，AI 会通过 inject 工具将命令注入到消息流中，触发插件的 `handleMessage` 方法。
-
-```javascript
-metadata: {
-    name: 'smarthome',
-    ai_triggerable: true,
-    ai_trigger_usage: '控制智能家居设备',
-    ai_trigger_format: '{operation}{device}',
-    ai_trigger_args: {
-        operation: '操作：开/关/切换',
-        device: '设备名称'
-    }
-}
-```
-
-AI 看到用户说"开客厅灯"时，会自动注入命令 `开客厅灯`，触发插件的 `handleMessage`。
-
-### 直接调用（Tool）
-
-适合为 AI 专门设计的工具，配置 `tool` 字段并提供 `executeTool` 方法，AI 通过 Function Calling 直接传入结构化参数。
+### 配置
 
 ```javascript
 metadata: {
     name: 'weather',
-    tool: {
-        enabled: true,
-        usage: '查询天气信息',
-        when_to_use: '当用户询问天气、气温等问题时',
-        parameters: [
-            { name: 'city', type: 'string', description: '城市名称', required: true },
-            { name: 'days', type: 'number', description: '预报天数', required: false, default: 1 }
-        ],
-        continue: true,
-        max_calls: 3
+    triggers: [{ type: 0, pattern: '/weather' }],
+    ai_triggerable: true,              // 允许 AI 触发
+    ai_trigger_usage: '查询天气信息',    // AI 看到的功能描述
+    ai_trigger_format: '/weather {city}', // AI 生成的命令格式
+    ai_trigger_args: {                  // 参数说明
+        city: '城市名称'
     }
 }
 ```
 
-AI 看到用户问"北京天气怎么样"时，会直接调用 `executeTool(sender, { city: '北京', days: 1 })`。
-
-### 如何选择
-
-| 场景 | 推荐模式 |
-|------|---------|
-| 已有命令插件，想让 AI 也能触发 | 注入调用 |
-| 为 AI 专门开发新工具 | 直接调用 |
-| 需要链式调用多个工具 | 直接调用 |
-| 需要结构化参数和返回值 | 直接调用 |
-| 简单的命令触发即可 | 注入调用 |
-
-## 注入调用配置
-
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| `ai_triggerable` | boolean | 设为 `true` 启用注入调用 |
-| `ai_trigger_usage` | string | 工具用途描述，帮助 AI 判断何时使用 |
-| `ai_trigger_format` | string | 命令格式模板，如 `{operation}{device}` |
-| `ai_trigger_args` | object | 参数说明，如 `{ operation: "操作类型" }` |
-
-## 直接调用配置
-
-### ToolConfig 字段
+### 字段说明
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| `enabled` | boolean | 是 | 是否启用工具 |
-| `parameters` | ToolParameter[] | 是 | 参数定义 |
-| `usage` | string | 是 | 工具用途描述 |
-| `when_to_use` | string | 否 | 何时使用此工具 |
-| `continue` | boolean | 否 | 调用后是否继续对话 |
-| `chainable` | boolean | 否 | 是否可链式调用 |
-| `max_calls` | number | 否 | 单次对话最大调用次数 |
-| `confirm` | boolean | 否 | 是否需要用户确认 |
-| `cooldown` | number | 否 | 冷却时间（秒） |
-| `timeout` | number | 否 | 超时时间（秒） |
+| `ai_triggerable` | boolean | 是 | 设为 `true` 启用注入调用 |
+| `ai_trigger_usage` | string | 是 | AI 看到的功能描述，帮助 AI 判断何时使用 |
+| `ai_trigger_format` | string | 是 | 命令格式模板，AI 会按此格式生成命令 |
+| `ai_trigger_args` | object | 否 | 参数说明，key 为参数名，value 为描述 |
 
-### ToolParameter 字段
+### 工作流程
+
+```
+用户消息 → AI 分析 → 判断需要调用工具 → 生成命令字符串
+→ 注入到消息流 → 匹配触发器 → 调用插件 handleMessage
+```
+
+AI 会根据 `ai_trigger_usage` 判断是否需要调用此工具，然后按照 `ai_trigger_format` 格式生成命令字符串，框架将其作为普通消息处理，匹配到对应触发器后调用插件的 `handleMessage`。
+
+### 示例
+
+```javascript
+class TranslatePlugin extends Plugin {
+    async handleMessage(sender) {
+        const text = await sender.param(0);
+        const targetLang = await sender.param(1) || 'en';
+        // 翻译逻辑...
+        await sender.reply(`翻译结果: ${result}`);
+    }
+}
+
+TranslatePlugin.metadata = {
+    name: 'translate',
+    triggers: [{ type: 0, pattern: '/translate' }],
+    ai_triggerable: true,
+    ai_trigger_usage: '翻译文本到指定语言',
+    ai_trigger_format: '/translate {text} {lang}',
+    ai_trigger_args: {
+        text: '要翻译的文本',
+        lang: '目标语言（如 en、ja、ko）'
+    }
+};
+
+module.exports = TranslatePlugin;
+```
+
+## 直接调用模式
+
+AI 直接调用插件的 `executeTool` 方法，获取结构化返回值。这种方式不经过消息流，效率更高。
+
+### 配置
+
+```javascript
+metadata: {
+    name: 'calculator',
+    tool: {
+        enabled: true,
+        usage: '数学计算器，支持加减乘除',
+        when_to_use: '当用户需要进行数学计算时',
+        parameters: [
+            { name: 'expression', type: 'string', description: '数学表达式', required: true }
+        ]
+    }
+}
+```
+
+### tool 字段说明
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `enabled` | boolean | 是 | 是否启用 |
+| `usage` | string | 是 | 工具功能描述 |
+| `when_to_use` | string | 是 | AI 判断何时使用的场景描述 |
+| `parameters` | Parameter[] | 是 | 参数定义列表 |
+
+### Parameter 定义
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | `name` | string | 是 | 参数名 |
-| `type` | string | 是 | 参数类型（string / number / boolean / array / object） |
+| `type` | string | 是 | 参数类型：`string` / `number` / `boolean` / `object` / `array` |
 | `description` | string | 是 | 参数描述 |
-| `required` | boolean | 是 | 是否必填 |
-| `enum` | string[] | 否 | 可选值列表 |
+| `required` | boolean | 否 | 是否必填（默认 false） |
 | `default` | any | 否 | 默认值 |
-| `example` | string | 否 | 示例值 |
-| `items` | object | 否 | 数组元素类型定义（type=array 时使用） |
+| `enum` | any[] | 否 | 可选值列表 |
 
-#### items 字段（数组类型参数）
+### 工作流程
 
-当 `type: 'array'` 时，使用 `items` 定义数组元素的类型：
+```
+用户消息 → AI 分析 → 判断需要调用工具 → 直接调用 executeTool
+→ 获取返回值 → AI 结合返回值生成回复
+```
+
+### 实现 executeTool
 
 ```javascript
-{
-    name: 'cities',
-    type: 'array',
-    description: '城市列表',
-    required: true,
-    items: {
-        type: 'string'  // 数组元素类型
+class CalculatorPlugin extends Plugin {
+    async executeTool(sender, args) {
+        const { expression } = args;
+        try {
+            // 安全计算表达式
+            const result = this.safeEval(expression);
+            return {
+                success: true,
+                content: `${expression} = ${result}`
+            };
+        } catch (err) {
+            return {
+                success: false,
+                content: `计算错误: ${err.message}`
+            };
+        }
+    }
+
+    safeEval(expr) {
+        // 安全的数学表达式计算
+        // ...
     }
 }
-```
 
-## 完整示例
-
-### 注入调用示例（Node.js）
-
-```javascript
-module.exports = {
-    metadata: {
-        name: 'translate',
-        version: '1.0.0',
-        description: '翻译工具',
-        triggers: [{ type: 0, pattern: '/translate' }],
-        event_types: ['message'],
-        ai_triggerable: true,
-        ai_trigger_usage: '翻译文本',
-        ai_trigger_format: '/translate {text}',
-        ai_trigger_args: { text: '要翻译的文本' }
-    },
-    async handleMessage(sender) {
-        const text = await sender.param(0);
-        // 翻译逻辑...
-        await sender.reply(`翻译结果: ${text}`);
+CalculatorPlugin.metadata = {
+    name: 'calculator',
+    tool: {
+        enabled: true,
+        usage: '数学计算器',
+        when_to_use: '用户需要进行数学计算时',
+        parameters: [
+            { name: 'expression', type: 'string', description: '数学表达式', required: true }
+        ]
     }
 };
+
+module.exports = CalculatorPlugin;
 ```
 
-### 直接调用示例（Node.js）
+### executeTool 返回值
+
+`executeTool` 必须返回一个对象：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `success` | boolean | 是 | 是否成功 |
+| `content` | string | 是 | 返回内容（AI 会基于此生成回复） |
+
+## 两种模式对比
+
+| 特性 | 注入调用 | 直接调用 |
+|------|---------|---------|
+| 配置字段 | `ai_triggerable` | `tool` |
+| 处理钩子 | `handleMessage` | `executeTool` |
+| 调用方式 | AI 生成命令 → 消息流 | AI 直接调用 → 返回值 |
+| 返回值 | 通过 `sender.reply()` | 通过 `return` |
+| 适用场景 | 需要发送消息给用户 | 需要返回数据给 AI |
+| 效率 | 较低（经过消息流） | 较高（直接调用） |
+
+## 混合模式
+
+一个插件可以同时支持两种模式：
 
 ```javascript
-module.exports = {
-    metadata: {
-        name: 'weather',
-        version: '1.0.0',
-        description: '天气查询工具',
-        triggers: [{ type: 0, pattern: '/weather' }],
-        event_types: ['message'],
-        tool: {
-            enabled: true,
-            usage: '查询指定城市的天气信息',
-            when_to_use: '当用户询问天气、气温、是否下雨等问题时',
-            parameters: [
-                {
-                    name: 'city',
-                    type: 'string',
-                    description: '城市名称',
-                    required: true,
-                    example: '北京'
-                },
-                {
-                    name: 'days',
-                    type: 'number',
-                    description: '预报天数',
-                    required: false,
-                    default: 1
-                }
-            ],
-            continue: true,
-            max_calls: 3
-        }
-    },
+class WeatherPlugin extends Plugin {
+    // 注入调用：用户直接使用 /weather 命令
     async handleMessage(sender) {
         const city = await sender.param(0);
-        const result = await this.queryWeather(city);
-        await sender.reply(result);
-    },
+        const data = await this.fetchWeather(city);
+        await sender.reply(this.formatWeather(data));
+    }
+
+    // 直接调用：AI 调用获取结构化数据
     async executeTool(sender, args) {
         const { city, days } = args;
-        const result = await this.queryWeather(city, days);
+        const data = await this.fetchWeather(city, days);
         return {
             success: true,
-            content: result
+            content: JSON.stringify(data)
         };
-    },
-    async queryWeather(city, days = 1) {
-        return `${city}今天晴，25°C`;
+    }
+}
+
+WeatherPlugin.metadata = {
+    name: 'weather',
+    triggers: [{ type: 0, pattern: '/weather' }],
+    // 注入调用配置
+    ai_triggerable: true,
+    ai_trigger_usage: '查询天气信息',
+    ai_trigger_format: '/weather {city}',
+    ai_trigger_args: { city: '城市名称' },
+    // 直接调用配置
+    tool: {
+        enabled: true,
+        usage: '查询指定城市的天气信息',
+        when_to_use: '当用户询问天气、气温、是否下雨等问题时',
+        parameters: [
+            { name: 'city', type: 'string', description: '城市名称', required: true },
+            { name: 'days', type: 'number', description: '预报天数', required: false, default: 1 }
+        ]
     }
 };
+
+module.exports = WeatherPlugin;
 ```
 
-### 直接调用示例（Python）
+## 注释语法
 
-```python
-metadata = {
-    "name": "weather",
-    "version": "1.0.0",
-    "description": "天气查询工具",
-    "triggers": [{"type": 0, "pattern": "/weather"}],
-    "event_types": ["message"],
-    "tool": {
-        "enabled": True,
-        "usage": "查询指定城市的天气信息",
-        "when_to_use": "当用户询问天气、气温、是否下雨等问题时",
-        "parameters": [
-            {"name": "city", "type": "string", "description": "城市名称", "required": True},
-            {"name": "days", "type": "number", "description": "预报天数", "required": False, "default": 1}
-        ],
-        "continue": True,
-        "max_calls": 3
-    }
-}
-
-async def handle_message(sender):
-    city = await sender.param(0)
-    result = await query_weather(city)
-    await sender.reply(result)
-
-async def execute_tool(sender, args):
-    city = args["city"]
-    days = args.get("days", 1)
-    result = await query_weather(city, days)
-    return {"success": True, "content": result}
-
-async def query_weather(city, days=1):
-    return f"{city}今天晴，25°C"
-```
-
-## ToolResult 格式
-
-`executeTool` 方法必须返回 `ToolResult` 对象：
+在插件文件头部使用注释声明 AI 工具配置：
 
 ```javascript
-{
-    success: true,          // 是否成功
-    content: "结果文本",     // 结果内容（LLM 会读取此内容）
-    data: {},               // 可选的结构化数据
-    error: "",              // 错误信息（success=false 时）
-    continue: true          // 可选，覆盖是否继续对话
-}
+// @ai-triggerable true
+// @ai-trigger-usage 查询天气信息
+// @ai-trigger-format /weather {city}
+// @ai-trigger-args {"city":"城市名称"}
 ```
-
-### continue 字段说明
-
-`continue` 控制工具调用后 AI 是否继续推理：
-
-| 场景 | ToolConfig.continue | ToolResult.continue | 最终行为 |
-|------|-------------------|-------------------|---------|
-| 查询后继续对话 | `true` | 不设置 | AI 继续推理，可能再次调用工具 |
-| 查询后继续对话 | `true` | `false` | AI 不再调用工具，直接回复用户 |
-| 一次性操作 | `false` | 不设置 | AI 不再调用工具 |
-| 一次性操作 | `false` | `true` | AI 继续推理（运行时覆盖） |
-
-**规则**：`ToolResult.continue` 优先级高于 `ToolConfig.continue`。不设置时使用 `ToolConfig` 的默认值。
-
-## 工具执行上下文
-
-`executeTool` 的第一个参数是 `Sender` 实例（与 `handleMessage` 中的 sender 相同），当没有消息上下文时为 `null`：
 
 ```javascript
-async executeTool(sender, args) {
-    if (sender) {
-        // 有消息上下文时，可获取发送者信息
-        const senderId = sender.getSenderId();
-        const senderName = sender.getSenderName();
-        const groupId = sender.getGroupId();
-        const platform = sender.getPlatform();
-        // 可通过 sender 回复用户
-        await sender.reply('工具执行完成');
-    } else {
-        // 无消息上下文（如定时触发）
-    }
-
-    // args 是 AI 传入的结构化参数
-    console.log(args.city);   // 城市名
-    console.log(args.days);   // 天数
-}
+// @tool
+// {
+//   "enabled": true,
+//   "usage": "查询天气",
+//   "when_to_use": "用户询问天气时",
+//   "parameters": [
+//     { "name": "city", "type": "string", "description": "城市", "required": true }
+//   ]
+// }
 ```
 
-> **注意**：`sender` 参数可能为 `null`（当工具不是由消息触发时），使用前务必做空值检查。
+## 最佳实践
 
-## 工具权限模型
-
-工具的可用性由多级权限控制，框架按以下流程判定：
-
-```
-1. 工具是否启用（enabled）
-2. 运行时等级过滤（取最小值）
-   ├── Agent 等级（AgentToolPolicy.AgentLevel）
-   ├── 用户等级（私聊时）
-   ├── 群组等级（群聊时）
-   └── 任务等级（Extra.task_level）
-3. Agent 策略过滤
-   ├── AllowedPlugins 白名单
-   └── SkillAllowedTools 技能关联工具
-4. 请求级过滤（AllowedToolNames）
-```
-
-`permission_level` 设置插件的最低等级要求，等级不足的用户/群组无法触发该工具：
-
-```javascript
-metadata: {
-    permission_level: 5,  // VIP 及以上用户才能通过 AI 调用
-    tool: { ... }
-}
-```
+1. **优先使用直接调用**：如果只需要返回数据给 AI，使用 `tool` + `executeTool` 效率更高
+2. **描述要清晰**：`usage` 和 `when_to_use` 描述越清晰，AI 判断越准确
+3. **参数要完整**：`parameters` 定义完整，AI 才能正确传参
+4. **错误要友好**：`executeTool` 返回 `success: false` 时，`content` 应包含可理解的错误信息
+5. **幂等性**：AI 可能重复调用同一工具，`executeTool` 应尽量保证幂等
