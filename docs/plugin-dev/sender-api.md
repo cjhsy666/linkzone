@@ -20,7 +20,7 @@ Sender 是消息上下文对象，在插件处理消息时传入，提供了消�
 | `segments` | array | 消息段列表 |
 | `extra` | object | 附加数据 |
 | `timestamp` | number | 时间戳 |
-| `permission_level` | number | 用户权限等级 |
+| `permission_level` | number | 用户权限等级（默认 1，>=6 为管理员） |
 | `linkzone_id` | string | 用户全局 ID |
 | `is_group` | boolean | 是否群聊 |
 | `is_private` | boolean | 是否私聊 |
@@ -29,92 +29,108 @@ Sender 是消息上下文对象，在插件处理消息时传入，提供了消�
 
 ### 基础信息
 
-| 方法 | 说明 | Node.js | Python |
-|------|------|---------|--------|
-| 获取消息文本 | 获取原始消息文本 | `getMessage()` | `get_message()` |
-| 获取发送者 ID | 获取发送者唯一标识 | `getSenderId()` | `get_sender_id()` |
-| 获取发送者名称 | 获取发送者昵称 | `getSenderName()` | `get_sender_name()` |
-| 获取平台 | 获取来源平台 | `getPlatform()` | `get_platform()` |
-| 获取群组 ID | 获取群组标识 | `getGroupId()` | `get_group_id()` |
-| 获取群组名称 | 获取群组名称 | `getGroupName()` | `get_group_name()` |
-| 获取消息 ID | 获取消息唯一标识 | `getMessageId()` | `get_message_id()` |
-| 获取机器人 ID | 获取当前机器人标识 | `getBotId()` | `get_bot_id()` |
-| 获取接收者 ID | 获取接收者标识 | `getReceiverId()` | `get_receiver_id()` |
-| 获取 LinkZone ID | 获取用户全局 ID | `getLinkZoneID()` | `get_linkzone_id()` |
+| 方法 | Node.js | Python | 说明 |
+|------|---------|--------|------|
+| 获取消息文本 | `getMessage()` | `get_message()` | 获取原始消息文本 |
+| 获取发送者 ID | `getSenderId()` | `get_sender_id()` | 获取发送者唯一标识 |
+| 获取发送者名称 | `getSenderName()` | `get_sender_name()` | 获取发送者昵称 |
+| 获取平台 | `getPlatform()` | `get_platform()` | 获取来源平台 |
+| 获取群组 ID | `getGroupId()` | `get_group_id()` | 获取群组标识（同步） |
+| 获取群组名称 | `getGroupName()` | `get_group_name()` | 获取群组名称 |
+| 获取消息 ID | `getMessageId()` | `get_message_id()` | 获取消息唯一标识 |
+| 获取机器人 ID | `getBotId()` | `get_bot_id()` | 获取当前机器人标识 |
+| 获取接收者 ID | `getReceiverId()` | `get_receiver_id()` | 获取接收者标识 |
+| 获取 LinkZone ID | `getLinkZoneID()` | `get_linkzone_id()` | 获取用户全局 ID（同步） |
+| 获取用户信息 | `await getUserInfo()` | `get_user_info()` | 获取用户详细信息（异步 RPC 调用） |
+
+### getUserInfo 返回值
+
+| 字段 | 说明 |
+|------|------|
+| `sender_id` | 发送者 ID |
+| `sender_name` | 发送者名称 |
+| `platform` | 来源平台 |
+| `linkzone_id` | 用户全局 ID |
+| `is_admin` | 是否管理员 |
+| `user_level` | 用户等级字符串 |
+| `user_status` | 用户状态字符串 |
+| `username?` | 用户名（有 LinkZone 账号时） |
+| `avatar_url?` | 头像 URL |
+| `level?` | 等级数值 |
+| `balance?` | 余额 |
+| `points?` | 积分 |
+| `is_active?` | 是否活跃 |
+| `created_at?` | 创建时间 |
+| `platforms?` | 关联平台列表 |
+
+> 此方法为异步 RPC 调用，从服务端获取最新用户信息。如只需本地属性，直接访问 `sender.sender_id`、`sender.sender_name` 等。
 
 ### 身份判断
 
-| 方法 | 异步 | 说明 | Node.js | Python |
-|------|------|------|---------|--------|
-| 是否管理员 | 否 | 判断发送者是否管理员（permission_level >= 6） | `isAdmin()` | `is_admin()` |
-| 是否群聊 | 否 | 判断是否群聊消息 | `isGroup()` | `is_group()` |
-| 是否私聊 | 否 | 判断是否私聊消息 | `isPrivate()` | `is_private()` |
+| 方法 | Node.js | Python | 说明 |
+|------|---------|--------|------|
+| 是否管理员 | `isAdmin()` | `is_admin()` | 判断发送者是否管理员（permission_level >= 6） |
+| 是否群聊 | `isGroup()` | `is_group()` | 判断是否群聊消息 |
+| 是否私聊 | `isPrivate()` | `is_private()` | 判断是否私聊消息 |
 
 ### 等级与状态
 
-| 方法 | 异步 | 说明 | Node.js | Python |
-|------|------|------|---------|--------|
-| 获取用户等级 | 是 | 获取用户等级 | `await getUserLevel()` | `await get_user_level()` |
-| 获取用户状态 | 是 | 获取用户状态 | `await getUserStatus()` | `await get_user_status()` |
-| 获取群组等级 | 是 | 获取群组等级 | `await getGroupLevel()` | `await get_group_level()` |
-
-返回值格式：
-
-```javascript
-// getUserLevel()
-{ level: "Lv5", levelInt: 5 }
-
-// getUserStatus()
-{ status: "active", statusInt: 1 }
-
-// getGroupLevel()
-{ level: "Lv3", levelInt: 3 }
-```
+| 方法 | Node.js | Python | 返回值 |
+|------|---------|--------|--------|
+| 获取用户等级 | `await getUserLevel()` | `get_user_level()` | `{ level: "Lv5", levelInt: 5 }` |
+| 获取用户状态 | `await getUserStatus()` | `get_user_status()` | `{ status: "active", statusInt: 1 }` |
+| 获取群组等级 | `await getGroupLevel()` | `get_group_level()` | `{ level: "Lv3", levelInt: 3 }` |
 
 ### 消息前缀
 
-| 方法 | 异步 | 说明 | Node.js | Python |
-|------|------|------|---------|--------|
-| 检查前缀 | 是 | 检查消息是否以指定前缀开头 | `await hasPrefix(prefix)` | `await has_prefix(prefix)` |
-| 移除前缀 | 是 | 移除消息前缀并返回剩余文本 | `await trimPrefix(prefix)` | `await trim_prefix(prefix)` |
+| 方法 | Node.js | Python | 说明 |
+|------|---------|--------|------|
+| 检查前缀 | `await hasPrefix(prefix)` | `has_prefix(prefix)` | 检查消息是否以指定前缀开头 |
+| 移除前缀 | `await trimPrefix(prefix)` | `trim_prefix(prefix)` | 移除消息前缀并返回剩余文本 |
+
+> Node.js 中这两个方法是 RPC 调用，会经过主进程处理。如只需简单字符串比对，直接用 `sender.message.startsWith(prefix)` 性能更好。
 
 ### 回复控制
 
-| 方法 | 异步 | 说明 | Node.js | Python |
-|------|------|------|---------|--------|
-| 允许回复 | 是 | 允许后续插件回复 | `await allowReply()` | `await allow_reply()` |
-| 禁止回复 | 是 | 禁止后续插件回复 | `await forbidReply()` | `await forbid_reply()` |
-| 是否允许回复 | 是 | 查询当前是否允许回复 | `await isReplyAllowed()` | `await is_reply_allowed()` |
+| 方法 | Node.js | Python | 说明 |
+|------|---------|--------|------|
+| 允许回复 | `await allowReply()` | `allow_reply()` | 允许后续插件回复 |
+| 禁止回复 | `await forbidReply()` | `forbid_reply()` | 禁止后续插件回复 |
+| 是否允许回复 | `await isReplyAllowed()` | `is_reply_allowed()` | 查询当前是否允许回复 |
 
-### 流程状态查询
+### 流程控制
 
-| 方法 | 异步 | 说明 | Node.js | Python |
-|------|------|------|---------|--------|
-| 是否已中止 | 是 | 查询是否已调用 abort | `await isAborted()` | `await is_aborted()` |
-| 是否已继续 | 是 | 查询是否已调用 continue | `await isContinued()` | `await is_continued()` |
+| 方法 | Node.js | Python | 说明 |
+|------|---------|--------|------|
+| 中止处理 | `await abort()` | `abort()` | 中止后续插件执行 |
+| 继续处理 | `await continue()` | `continue_()` | 继续执行后续插件（Python 中 `continue` 是关键字，方法名加下划线） |
+| 是否已中止 | `await isAborted()` | `is_aborted()` | 查询是否已调用 abort |
+| 是否已继续 | `await isContinued()` | `is_continued()` | 查询是否已调用 continue |
+
+> **注意**：Sender 在消息处理完毕后会被框架自动销毁。销毁后调用 `reply()`、`listen()` 等方法会抛错。如果插件中使用了 `await sleep()` 或其他异步等待，之后的 Sender 调用应包裹在 try/catch 中，或通过 `listen()` 获取新的 Sender。
 
 ### 正则捕获组
 
-| 方法 | 异步 | 说明 | Node.js | Python |
-|------|------|------|---------|--------|
-| 设置捕获组 | 是 | 设置正则匹配的捕获组 | `await setCaptureGroups(groups)` | `await set_capture_groups(groups)` |
-| 设置命名参数 | 是 | 设置命名参数 | `await setNamedParam(key, value)` | `await set_named_param(key, value)` |
+| 方法 | Node.js | Python | 说明 |
+|------|---------|--------|------|
+| 设置捕获组 | `await setCaptureGroups(groups)` | `set_capture_groups(groups)` | 设置正则匹配的捕获组 |
+| 设置命名参数 | `await setNamedParam(key, value)` | `set_named_param(key, value)` | 设置命名参数 |
 
 ### 事件信息
 
-| 方法 | 异步 | 说明 | Node.js | Python |
-|------|------|------|---------|--------|
-| 获取事件 | 是 | 获取原始事件对象 | `await getEvent()` | `await get_event()` |
+| 方法 | Node.js | Python | 说明 |
+|------|---------|--------|------|
+| 获取事件 | `await getEvent()` | `get_event()` | 获取原始事件对象 |
 
 ### 消息回复
 
-| 方法 | 异步 | 说明 | Node.js | Python |
-|------|------|------|---------|--------|
-| 回复消息 | 是 | 发送文本回复，返回消息 ID | `await reply(content)` | `await reply(content)` |
-| 批量回复 | 是 | 发送多条消息 | `await replyBatch(messages)` | `await reply_batch(messages)` |
-| 撤回消息 | 是 | 撤回消息（不传 id 则撤回当前消息，可设延迟） | `await recallMessage(id?, delay?)` | `await recall_message(id?, delay?)` |
+| 方法 | Node.js | Python | 说明 |
+|------|---------|--------|------|
+| 回复消息 | `await reply(content)` | `reply(content)` | 发送文本回复，返回消息 ID |
+| 批量回复 | `await replyBatch(messages)` | `reply_batch(messages)` | 发送多条消息 |
+| 撤回消息 | `await recallMessage(id?, delay?)` | `recall_message(id?, delay?)` | 撤回消息（不传 id 则撤回当前消息，可设延迟） |
 
-> `reply()` 返回消息 ID 字符串，可用于后续撤回。`content` 支持字符串、消息段对象或消息段数组，详见[消息段](#消息段)。
+> `reply()` 返回消息 ID 字符串，可用于后续撤回。`content` 支持字符串、消息段对象或消息段数组。Node.js 中发送失败时会抛错，需用 try/catch 捕获。
 
 ### 消息段
 
@@ -152,8 +168,6 @@ Sender 是消息上下文对象，在插件处理消息时传入，提供了消�
 
 #### 发送方式
 
-`reply()` 支持三种输入格式：
-
 ```javascript
 // 1. 纯文本字符串（最常用）
 await sender.reply('你好');
@@ -174,82 +188,61 @@ await sender.reply([
 SDK 提供了 `LinkZone.segment` 快捷构造消息段：
 
 ```javascript
-const { LinkZone } = require('linkzone-sdk');
-
-// 文本
 LinkZone.segment.text('你好')
-
-// 图片
 LinkZone.segment.image('https://example.com/pic.jpg')
-
-// @某人
 LinkZone.segment.at('123456')
-
-// 回复消息
 LinkZone.segment.reply('msg_123')
-
-// QQ表情
 LinkZone.segment.face('178')
-
-// 语音
 LinkZone.segment.voice('https://example.com/voice.silk')
-
-// 视频
 LinkZone.segment.video('https://example.com/video.mp4')
-
-// 音乐卡片
 LinkZone.segment.music('custom', 'https://jump.url', 'https://audio.url', '稻香', '周杰伦', 'https://cover.jpg')
-
-// JSON卡片
 LinkZone.segment.json('{"prompt":"..."}')
 ```
 
-#### 使用示例
-
-```javascript
-// 发送音乐卡片（适配器自动处理平台差异）
-await sender.reply({
-    type: 'music',
-    data: {
-        title: '稻香',
-        content: '周杰伦',
-        url: 'https://music.example.com/123',
-        audio: 'https://music.example.com/123.mp3',
-        image: 'https://music.example.com/cover.jpg'
-    }
-});
-
-// 混合发送：@某人 + 文本 + 图片
-await sender.reply([
-    { type: 'at', data: { qq: '123456' } },
-    { type: 'text', data: { text: ' 看看这张图' } },
-    { type: 'image', data: { file: 'https://example.com/pic.jpg' } }
-]);
-```
-
-> **提示**：无需手动判断平台，直接使用消息段即可。适配器会将不支持的类型自动降级为纯文本。
-
 ### 等待输入
 
-| 方法 | 异步 | 说明 | Node.js | Python |
-|------|------|------|---------|--------|
-| 监听输入 | 是 | 等待用户下一条消息 | `await listen(opts?)` | `await listen(opts?)` |
-| 等待输入 | 是 | 简化的等待输入 | `await waitInput(opts?)` | `await wait_input(opts?)` |
-| 回复并监听 | 是 | 回复后等待用户回复 | `await replyAndListen(content, opts?)` | `await reply_and_listen(content, opts?)` |
-| 确认对话 | 是 | 是/否确认 | `await askConfirm(question, yes?, no?, timeout?)` | `await ask_confirm(question, yes?, no?, timeout?)` |
+| 方法 | Node.js | Python | 说明 |
+|------|---------|--------|------|
+| 监听输入 | `await listen(opts?)` | `listen(**kwargs)` | 等待用户下一条消息 |
+| 等待输入 | `await waitInput(opts?)` | `wait_input(**kwargs)` | 简化的等待输入 |
+| 回复并监听 | `await replyAndListen(content, opts?)` | `reply_and_listen(content, **kwargs)` | 回复后等待用户回复 |
+| 确认对话 | `await askConfirm(question, yes?, no?, timeout?)` | `ask_confirm(question, yes_kw?, no_kw?, timeout?)` | 是/否确认 |
 
-### 流程控制
+#### listen 选项
 
-| 方法 | 异步 | 说明 | Node.js | Python |
-|------|------|------|---------|--------|
-| 获取参数 | 是 | 获取命令参数（按索引，空格分割） | `await param(index)` | `await param(index)` |
-| 获取所有参数 | 是 | 获取所有命令参数（返回对象） | `await getAllParams()` | `await get_all_params()` |
-| 中止处理 | 是 | 中止后续插件执行 | `await abort()` | `await abort()` |
-| 继续处理 | 是 | 继续执行后续插件 | `await continue()` | `await continue()` |
+```javascript
+await sender.listen({
+    timeout: 60000,               // 超时时间（毫秒）
+    rules: [],                    // 匹配规则（正则表达式数组）
+    listenPrivate: true,          // 是否监听私聊
+    listenGroup: true,            // 是否监听群聊
+    cancelKeywords: ['取消'],     // 取消关键词
+    allowPlatforms: [],           // 允许的平台列表（空=全部）
+    prohibitPlatforms: [],        // 禁止的平台列表
+    allowGroups: [],              // 允许的群组列表（空=全部）
+    prohibitGroups: [],           // 禁止的群组列表
+    allowUsers: [],               // 允许的用户列表（空=全部）
+    prohibitUsers: []             // 禁止的用户列表
+});
+```
 
-#### 参数解析规则
+返回值：
 
-`param(index)` 按空格分割命令后的文本，支持引号包裹含空格的参数：
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `sender` | Sender \| null | 新的 Sender 对象（超时/取消时为 null） |
+| `timeout` | boolean | 是否超时 |
+| `cancelled` | boolean | 是否被取消关键词取消 |
+| `error` | string | 底层异常信息（可选） |
+
+### 参数获取
+
+| 方法 | Node.js | Python | 说明 |
+|------|---------|--------|------|
+| 获取参数 | `await param(index)` | `param(index)` | 获取命令参数（按索引，空格分割） |
+| 获取所有参数 | `await getAllParams()` | `get_all_params()` | 获取所有命令参数（返回对象） |
+
+参数解析规则：
 
 ```
 /weather 北京 3天        → param(0)="北京", param(1)="3天"
@@ -258,26 +251,20 @@ await sender.reply([
 
 ### 群管理操作
 
-| 方法 | 异步 | 说明 | Node.js | Python |
-|------|------|------|---------|--------|
-| 踢出成员 | 是 | 将成员踢出群组 | `await kick(userId?)` | `await kick(user_id?)` |
-| 禁言 | 是 | 禁言指定用户 | `await ban(userId?, duration?)` | `await ban(user_id?, duration?)` |
-| 解除禁言 | 是 | 解除用户禁言 | `await unban(userId?)` | `await unban(user_id?)` |
-| 执行动作 | 是 | 执行平台特定动作 | `await doAction(action, params?)` | `await do_action(action, params?)` |
+| 方法 | Node.js | Python | 说明 |
+|------|---------|--------|------|
+| 踢出成员 | `await kick(userId?)` | `kick(user_id?)` | 将成员踢出群组 |
+| 禁言 | `await ban(userId?, duration?)` | `ban(user_id?, duration?)` | 禁言指定用户（duration 单位秒） |
+| 解除禁言 | `await unban(userId?)` | `unban(user_id?)` | 解除用户禁言 |
+| 执行动作 | `await doAction(action, params?)` | `do_action(action, params?)` | 执行平台特定动作 |
 
 ### 上下文数据
 
-| 方法 | 异步 | 说明 | Node.js | Python |
-|------|------|------|---------|--------|
-| 获取数据 | 是 | 获取插件私有数据 | `await getData(key, default?)` | `await get_data(key, default?)` |
-| 设置数据 | 是 | 设置插件私有数据 | `await setData(key, value)` | `await set_data(key, value)` |
-| 获取配置 | 是 | 获取插件配置 | `await getConfig(key?, default?)` | `await get_config(key?, default?)` |
-
-### 用户身份
-
-| 方法 | 异步 | 说明 | Node.js | Python |
-|------|------|------|---------|--------|
-| 获取用户信息 | 是 | 获取用户详细信息 | `await getUserInfo()` | `await get_user_info()` |
+| 方法 | Node.js | Python | 说明 |
+|------|---------|--------|------|
+| 获取数据 | `await getData(key, default?)` | `get_data(key, default=None)` | 获取插件私有数据，key 不存在时返回 default |
+| 设置数据 | `await setData(key, value)` | `set_data(key, value)` | 设置插件私有数据 |
+| 获取配置 | `await getConfig(key?, default?)` | `get_config(key=None, default=None)` | 获取插件配置。不传 key 返回完整配置对象，不存在时返回 `{}` |
 
 ## 使用示例
 
@@ -294,8 +281,8 @@ async handleMessage(sender) {
 ```javascript
 // 触发器: /echo
 async handleMessage(sender) {
-    const text = await sender.param(0);  // 获取第一个参数
-    const allParams = await sender.getAllParams();  // 获取所有参数
+    const text = await sender.param(0);
+    const allParams = await sender.getAllParams();
     await sender.reply(text || '请输入内容');
 }
 ```
@@ -309,24 +296,6 @@ async handleMessage(sender) {
     if (!result.timeout && result.sender) {
         const name = result.sender.getMessage();
         await sender.reply(`你好，${name}！`);
-    }
-}
-```
-
-### 确认对话
-
-```javascript
-async handleMessage(sender) {
-    const confirmed = await sender.askConfirm(
-        '确定要执行此操作吗？',
-        ['是', 'yes', 'y', '确认'],
-        ['否', 'no', 'n', '取消'],
-        15000
-    );
-    if (confirmed) {
-        await sender.reply('操作已执行');
-    } else {
-        await sender.reply('操作已取消');
     }
 }
 ```
@@ -350,36 +319,7 @@ async handleMessage(sender) {
         await sender.reply('仅管理员可执行此操作');
         return;
     }
-    // 禁言某用户 60 秒
     await sender.ban('user123', 60);
     await sender.reply('已禁言该用户');
-}
-```
-
-## listen 选项
-
-```javascript
-await sender.listen({
-    timeout: 30000,               // 超时时间（毫秒）
-    rules: [],                    // 匹配规则（正则表达式数组）
-    listenPrivate: false,         // 是否监听私聊
-    listenGroup: true,            // 是否监听群聊
-    cancelKeywords: ['取消'],     // 取消关键词
-    allowPlatforms: [],           // 允许的平台列表（空=全部）
-    prohibitPlatforms: [],        // 禁止的平台列表
-    allowGroups: [],              // 允许的群组列表（空=全部）
-    prohibitGroups: [],           // 禁止的群组列表
-    allowUsers: [],               // 允许的用户列表（空=全部）
-    prohibitUsers: []             // 禁止的用户列表
-});
-```
-
-返回值：
-
-```javascript
-{
-    sender: Sender | null,    // 发送者上下文
-    timeout: boolean,         // 是否超时
-    cancelled: boolean        // 是否取消
 }
 ```
