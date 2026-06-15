@@ -1,597 +1,324 @@
 # Plugin API
 
-Plugin 类提供插件自身的管理能力，包括数据存储、配置管理、定时任务、中间件等。
+Plugin 是插件基类，提供了生命周期钩子、数据库访问、定时任务、日志、插件间通信等核心能力。
 
-## 类式插件
+> **全局变量**：Node.js 和 Python 的 SDK 对象（`Plugin`、`Sender`、`LinkZone`、`LZDB`）由 runtime 自动注入为全局变量，**无需 `require` 或 `import`**。
 
-### Node.js
+## 生命周期钩子
+
+| 钩子 | Node.js | Python | 说明 |
+|------|---------|--------|------|
+| 启动 | `onStart()` | `on_start()` | 插件实例化后调用，用于初始化 |
+| 消息处理 | `handleMessage(sender)` | `handle_message(sender)` | 收到匹配消息时调用 |
+| 通知处理 | `handleNotice(sender)` | `handle_notice(sender)` | 收到通知事件时调用 |
+| 元事件处理 | `handleMeta(sender)` | `handle_meta(sender)` | 收到元事件时调用 |
+| 定时任务 | `handleCron()` | `handle_cron()` | Cron 表达式触发时调用 |
+| AI 工具执行 | `executeTool(sender, args)` | `execute_tool(sender, args)` | AI 调用工具时执行 |
+| 停止 | `onStop()` | `on_stop()` | 插件卸载前调用，用于清理资源 |
+
+> **loaded 模式**的插件 runtime 不会创建实例，因此 `onStart`、`handleMessage` 等钩子**不会被调用**。
+
+## 插件定义方式
+
+### Node.js - 函数式
 
 ```javascript
-const { Plugin } = require('linkzone-sdk');
-
-class MyPlugin extends Plugin {
-    constructor() {
-        super({
-            name: 'my-plugin',
-            version: '1.0.0',
-            description: '我的插件'
-        });
-    }
-
-    async onStart() {
-        // 插件启动时初始化
-    }
-
+module.exports = {
+    metadata: {
+        name: 'echo',
+        version: '1.0.0',
+        description: '回声插件',
+        triggers: [{ type: 0, pattern: '/echo' }]
+    },
     async handleMessage(sender) {
-        // 处理消息
+        await sender.reply(sender.getMessage());
+    }
+};
+```
+
+### Node.js - 类式
+
+```javascript
+class HelloPlugin extends Plugin {
+    async handleMessage(sender) {
+        await sender.reply(`你好，${sender.getSenderName()}！`);
     }
 }
 
-module.exports = MyPlugin;
+HelloPlugin.metadata = {
+    name: 'hello',
+    version: '1.0.0',
+    description: '问候插件',
+    triggers: [{ type: 0, pattern: '/hello' }],
+    event_types: ['message']
+};
+
+module.exports = HelloPlugin;
 ```
 
-### Python
+> **重要**：类式插件必须使用**静态属性** `MyPlugin.metadata = {...}` 定义元信息，而不是通过 `super({...})` 传递。runtime 只读取静态 metadata 属性。
+
+### Python - 函数式
 
 ```python
-from linkzone import Plugin, create_plugin
+# SDK 对象由 runtime 自动注入，无需 import
 
-class MyPlugin(Plugin):
-    def __init__(self):
-        super().__init__({
-            "name": "my-plugin",
-            "version": "1.0.0",
-            "description": "我的插件"
-        })
+def handle_message(sender):
+    sender.reply(sender.get_message())
 
-    async def on_start(self):
-        pass
-
-    async def handle_message(self, sender):
-        pass
-
-create_plugin(MyPlugin)
-```
-
-## 数据存储
-
-每个插件有独立的命名空间存储数据：
-
-### 方法列表
-
-| 方法 | 异步 | 说明 | Node.js | Python |
-|------|------|------|---------|--------|
-| 读取数据 | 是 | 读取插件私有数据 | `await this.getData(key, default?)` | `await self.get_data(key, default?)` |
-| 写入数据 | 是 | 写入插件私有数据 | `await this.setData(key, value)` | `await self.set_data(key, value)` |
-| 删除数据 | 是 | 删除插件私有数据 | `await this.deleteData(key)` | `await self.delete_data(key)` |
-| 列出数据 | 是 | 列出所有数据键 | `await this.listData()` | `await self.list_data()` |
-
-### Node.js
-
-```javascript
-// 写入数据
-await this.setData('key', { count: 1 });
-
-// 读取数据
-const data = await this.getData('key', { count: 0 });
-
-// 删除数据
-await this.deleteData('key');
-
-// 列出所有键
-const keys = await this.listData();
-```
-
-### Python
-
-```python
-# 写入数据
-await self.set_data("key", {"count": 1})
-
-# 读取数据
-data = await self.get_data("key", {"count": 0})
-
-# 删除数据
-await self.delete_data("key")
-
-# 列出所有键
-keys = await self.list_data()
-```
-
-## 配置管理
-
-### 方法列表
-
-| 方法 | 异步 | 说明 | Node.js | Python |
-|------|------|------|---------|--------|
-| 获取配置 | 是 | 获取插件配置 | `await this.getConfig()` | `await self.get_config()` |
-| 设置配置 | 是 | 设置插件配置 | `await this.setConfig(config)` | `await self.set_config(config)` |
-
-### Node.js
-
-```javascript
-// 获取插件配置
-const config = await this.getConfig();
-
-// 设置插件配置
-await this.setConfig({ api_key: 'xxx', timeout: 30 });
-```
-
-### Python
-
-```python
-# 获取插件配置
-config = await self.get_config()
-
-# 设置插件配置
-await self.set_config({"api_key": "xxx", "timeout": 30})
-```
-
-## 定时任务
-
-### 方法列表
-
-| 方法 | 异步 | 说明 | Node.js | Python |
-|------|------|------|---------|--------|
-| 注册定时任务 | 是 | 注册回调式定时任务 | `await this.registerCron(taskId, cron, handler)` | `await self.register_cron(taskId, cron, handler)` |
-| 更新定时任务 | 是 | 更新定时任务表达式 | `await this.updateCron(taskId, cron)` | `await self.update_cron(taskId, cron)` |
-| 取消定时任务 | 是 | 取消定时任务 | `await this.unregisterCron(taskId)` | `await self.unregister_cron(taskId)` |
-| 列出定时任务 | 是 | 列出所有定时任务 | `await this.listCron()` | `await self.list_cron()` |
-| 手动触发 | 是 | 手动触发定时任务 | `await this.triggerCron(taskId)` | `await self.trigger_cron(taskId)` |
-
-### Node.js
-
-```javascript
-async onStart() {
-    // 注册定时任务
-    await this.registerCron('daily_report', '0 9 * * *', () => {
-        console.log('每天 9 点执行');
-    });
-
-    // 取消定时任务
-    await this.unregisterCron('daily_report');
+metadata = {
+    "name": "echo",
+    "version": "1.0.0",
+    "description": "回声插件",
+    "triggers": [{"type": 0, "pattern": "/echo"}]
 }
 ```
 
-### Python
+### Python - 类式
 
 ```python
-async def on_start(self):
-    await self.register_cron("daily_report", "0 9 * * *", self.daily_report)
+# SDK 对象由 runtime 自动注入，无需 import
 
-async def daily_report(self):
-    print("每天 9 点执行")
-```
+class HelloPlugin(Plugin):
+    def handle_message(self, sender):
+        sender.reply(f"你好，{sender.get_sender_name()}！")
 
-Cron 表达式格式：`分 时 日 月 周`
-
-```
-┌──────── 分钟 (0 - 59)
-│ ┌────── 小时 (0 - 23)
-│ │ ┌──── 日 (1 - 31)
-│ │ │ ┌── 月 (1 - 12)
-│ │ │ │ ┌ 星期 (0 - 6, 0=周日)
-│ │ │ │ │
-* * * * *
-```
-
-常用示例：
-
-| 表达式 | 说明 |
-|--------|------|
-| `*/5 * * * *` | 每 5 分钟 |
-| `0 * * * *` | 每小时 |
-| `0 9 * * *` | 每天 9 点 |
-| `0 9 * * 1` | 每周一 9 点 |
-
-## 中间件
-
-插件支持中间件模式，在消息处理前后插入逻辑：
-
-### Node.js
-
-```javascript
-class MyPlugin extends Plugin {
-    constructor() {
-        super({ name: 'my-plugin', version: '1.0.0' });
-        this.use(async (sender, next) => {
-            console.log('处理前:', sender.getMessage());
-            await next();
-            console.log('处理后');
-        });
-    }
+HelloPlugin.metadata = {
+    "name": "hello",
+    "version": "1.0.0",
+    "description": "问候插件",
+    "triggers": [{"type": 0, "pattern": "/hello"}],
+    "event_types": ["message"]
 }
 ```
 
-中间件按注册顺序执行，`next()` 调用下一个中间件或最终的 `handleMessage`。
-
-## 性能指标上报
-
-插件可通过 `reportMetrics` 手动上报性能指标：
-
-```javascript
-async handleMessage(sender) {
-    const start = Date.now();
-    // ... 业务逻辑
-    await this.reportMetrics(Date.now() - start, null);  // 成功
-    // await this.reportMetrics(Date.now() - start, 'error msg');  // 失败
-}
-```
-
-默认情况下（`autoMetrics: true`），框架自动上报 `handleMessage` 和 `executeTool` 的执行耗时和错误。如需禁用自动上报：
-
-```javascript
-class MyPlugin extends Plugin {
-    constructor() {
-        super({
-            name: 'my-plugin',
-            version: '1.0.0',
-            autoMetrics: false  // 禁用自动指标上报
-        });
-    }
-}
-```
+> **Python 注意**：虽然 `Plugin`、`Sender`、`LinkZone`、`LZDB` 是全局变量，但 Python 的类定义语法要求基类在定义时可见。因此 Python 类式插件中 `Plugin` 作为基类必须能被解析到——runtime 会在执行前将其注入全局命名空间，所以无需 import。
 
 ## 数据库访问
 
-插件可以通过 `LinkZone.db` 访问框架数据库：
+插件可通过 `this.db`（Node.js）/ `self.db`（Python）访问插件专属的命名空间数据库。
 
-### Node.js
+| 方法 | Node.js | Python | 说明 |
+|------|---------|--------|------|
+| 获取数据 | `await this.db.get(key)` | `self.db.get(key)` | 获取指定 key 的值 |
+| 设置数据 | `await this.db.set(key, value)` | `self.db.set(key, value)` | 设置 key-value |
+| 删除数据 | `await this.db.delete(key)` | `self.db.delete(key)` | 删除指定 key |
+| 列出键 | `await this.db.list(prefix?)` | `self.db.list(prefix="")` | 列出指定前缀的 key |
+| 检查存在 | `await this.db.has(key)` | `self.db.has(key)` | 检查 key 是否存在 |
+
+> 函数式插件中通过 `Plugin.db` 访问。
+
+### LZDB 全局数据库
+
+`LZDB` 是全局数据库对象，可在任何插件中使用（包括 loaded 模式）：
 
 ```javascript
-const { LinkZone } = require('linkzone-sdk');
-
-// 直接操作数据库
-await LinkZone.db.set('my_bucket', 'key', value);
-const data = await LinkZone.db.get('my_bucket', 'key', defaultValue);
-await LinkZone.db.delete('my_bucket', 'key');
-const keys = await LinkZone.db.list('my_bucket');
+// Node.js
+await LZDB.set('global_key', 'value');
+const val = await LZDB.get('global_key');
 ```
-
-### Python
 
 ```python
-from linkzone import LinkZone
-
-await LinkZone.db.set("my_bucket", "key", value)
-data = await LinkZone.db.get("my_bucket", "key", default_value)
-await LinkZone.db.delete("my_bucket", "key")
-keys = await LinkZone.db.list("my_bucket")
+# Python
+LZDB.set("global_key", "value")
+val = LZDB.get("global_key")
 ```
 
-## LZDB 命名空间数据库
+| 方法 | Node.js | Python | 说明 |
+|------|---------|--------|------|
+| 获取 | `await LZDB.get(ns, key)` | `LZDB.get(ns, key)` | 获取指定命名空间的数据 |
+| 设置 | `await LZDB.set(ns, key, value)` | `LZDB.set(ns, key, value)` | 设置数据 |
+| 删除 | `await LZDB.delete(ns, key)` | `LZDB.delete(ns, key)` | 删除数据 |
+| 列出 | `await LZDB.list(ns, prefix?)` | `LZDB.list(ns, prefix="")` | 列出 key |
+| 检查 | `await LZDB.has(ns, key)` | `LZDB.has(ns, key)` | 检查存在 |
 
-LZDB 提供带命名空间的数据库访问，自动为键添加前缀：
+> 当 `ns` 和 `key` 都传入时操作指定命名空间；只传一个参数时，`ns` 默认为插件自身命名空间。
 
-### Node.js
+## 定时任务
+
+在 metadata 中声明 `cron` 表达式，框架会按计划调用 `handleCron`：
 
 ```javascript
-const { LZDB } = require('linkzone-sdk');
-const db = new LZDB('my-plugin');
+// Node.js
+class TimerPlugin extends Plugin {
+    async handleCron() {
+        // 每天早上 8 点执行
+        await LinkZone.sendGroupMessage('group_123', '早上好！');
+    }
+}
 
-await db.set('user_count', 100);
-const count = await db.get('user_count', 0);
-await db.delete('user_count');
-const exists = await db.exists('user_count');
-const keys = await db.keys();
-await db.clear();
+TimerPlugin.metadata = {
+    name: 'morning-greeting',
+    cron: '0 8 * * *',
+    lifecycle_mode: 'persistent'
+};
+
+module.exports = TimerPlugin;
 ```
-
-### Python
 
 ```python
-from linkzone import LZDB
+# Python
+class TimerPlugin(Plugin):
+    def handle_cron(self):
+        LinkZone.send_group_message("group_123", "早上好！")
 
-db = LZDB("my-plugin")
-await db.set("user_count", 100)
-count = await db.get("user_count", 0)
-await db.delete("user_count")
-exists = await db.exists("user_count")
-keys = await db.keys()
-await db.clear()
+TimerPlugin.metadata = {
+    "name": "morning-greeting",
+    "cron": "0 8 * * *",
+    "lifecycle_mode": "persistent"
+}
 ```
 
-详见 [LZDB 数据库](/plugin-dev/lzdb)。
+## 日志
 
-## 扩展系统
+| 方法 | Node.js | Python | 说明 |
+|------|---------|--------|------|
+| 调试 | `this.log.debug(msg)` | `self.log.debug(msg)` | DEBUG 级别日志 |
+| 信息 | `this.log.info(msg)` | `self.log.info(msg)` | INFO 级别日志 |
+| 警告 | `this.log.warn(msg)` | `self.log.warn(msg)` | WARN 级别日志 |
+| 错误 | `this.log.error(msg)` | `self.log.error(msg)` | ERROR 级别日志 |
 
-插件可以通过元信息字段启用内置扩展，获得监控等能力，无需手动实现。
+> 函数式插件中通过 `Plugin.log` 访问。日志级别可通过 `config_schema` 中的 `log_level` 配置项控制。
 
-### 性能指标扩展
+## 插件间通信
 
-启用方式：`enable_metrics: true`
+### 发送消息
 
-自动收集插件执行次数、错误率、平均耗时等指标，可在管理后台查看。
+| 方法 | Node.js | Python | 说明 |
+|------|---------|--------|------|
+| 发送群消息 | `await LinkZone.sendGroupMessage(groupId, content)` | `LinkZone.send_group_message(group_id, content)` | 向指定群发送消息 |
+| 发送私聊消息 | `await LinkZone.sendPrivateMessage(userId, content)` | `LinkZone.send_private_message(user_id, content)` | 向指定用户发送私聊 |
 
-### 扩展对照表
+### 事件推送
 
-| 扩展 | 启用字段 | 说明 |
-|------|---------|------|
-| 性能指标 | `enable_metrics` | 自动收集，管理后台查看 |
+| 方法 | Node.js | Python | 说明 |
+|------|---------|--------|------|
+| 推送事件 | `await LinkZone.pushEvent(event)` | `LinkZone.push_event(event)` | 向框架推送自定义事件 |
 
-## 配置热更新
+### HTTP 请求
 
-插件运行期间可通过 `getConfig()` 主动获取最新配置。当配置变更时，框架会触发热重载（重新加载插件文件），此时插件会经历 `onStop` → 重新加载 → `onStart` 的完整生命周期。
+| 方法 | Node.js | Python | 说明 |
+|------|---------|--------|------|
+| HTTP GET | `await LinkZone.httpGet(url, headers?)` | `LinkZone.http_get(url, headers={})` | 发起 GET 请求 |
+| HTTP POST | `await LinkZone.httpPost(url, body, headers?)` | `LinkZone.http_post(url, body, headers={})` | 发起 POST 请求 |
+
+> HTTP 请求通过主进程代理发送，避免插件直接暴露网络。
+
+## 配置访问
+
+插件可通过 `sender.getConfig()` 获取用户在管理后台配置的值：
 
 ```javascript
-class MyPlugin extends Plugin {
-    constructor() {
-        super({
-            name: 'my-plugin',
-            version: '1.0.0',
-            config_schema: {
-                api_key: {
-                    type: 'string',
-                    label: 'API Key',
-                    default: ''
-                }
-            }
-        });
-    }
+async handleMessage(sender) {
+    const config = await sender.getConfig();
+    const apiKey = config.api_key;
+    const maxRetries = config.max_retries || 3;
+}
+```
 
-    async onStart() {
-        // 每次启动时读取最新配置
-        const config = await this.getConfig();
-        this.apiKey = config.api_key || '';
-        this.initClient(this.apiKey);
-    }
+## 热重载
 
-    async onStop() {
-        // 清理资源
-        this.cleanup();
+框架支持插件热重载，修改插件代码后自动重新加载，无需重启服务：
+
+- **transient** 插件：下次触发时自动使用新代码
+- **persistent** 插件：检测到文件变更后自动重启
+- **loaded** 插件：下次被 require 时使用新代码
+
+热重载时会依次调用 `onStop()` → 卸载旧实例 → 加载新代码 → 调用 `onStart()`。
+
+## 错误处理
+
+插件中的未捕获异常会被 SDK 自动捕获并记录日志，不会导致 runtime 崩溃：
+
+```javascript
+async handleMessage(sender) {
+    try {
+        const result = await riskyOperation();
+        await sender.reply(result);
+    } catch (err) {
+        this.log.error(`处理失败: ${err.message}`);
+        await sender.reply('处理出错，请稍后重试');
     }
 }
 ```
 
-> **注意**：SDK 中没有 `onConfigChanged` 和 `onReload` 钩子。配置变更通过热重载机制处理，插件应在 `onStart` 中读取配置。
-
-## LinkZone 全局模块
-
-`LinkZone` 是全局模块，提供消息段构建、消息推送、事件系统、用户管理等跨插件能力。
-
-### 工具函数
-
-| 方法 | 说明 | Node.js |
-|------|------|---------|
-| `LinkZone.sleep(ms)` | 异步等待 | `await LinkZone.sleep(1000)` |
-| `LinkZone.randomInt(min, max)` | 随机整数 | `LinkZone.randomInt(1, 100)` |
-| `LinkZone.uuid()` | 生成唯一 ID | `LinkZone.uuid()` |
-
-### 消息段构建
-
-构建富媒体消息段，用于 `sender.reply()` 发送复合内容：
+## 完整示例
 
 ```javascript
-const { LinkZone } = require('linkzone-sdk');
-
-// 文本段
-LinkZone.segment.text('Hello');
-
-// 图片段
-LinkZone.segment.image('https://example.com/img.png');
-
-// @段
-LinkZone.segment.at('123456');
-
-// 回复段
-LinkZone.segment.reply('msg_id');
-
-// 表情段
-LinkZone.segment.face(178);
-
-// 语音段
-LinkZone.segment.voice('https://example.com/audio.silk');
-
-// 视频段
-LinkZone.segment.video('https://example.com/video.mp4');
-
-// 音乐段
-LinkZone.segment.music('custom', 'https://...', 'https://audio.mp3', '标题', '描述', 'https://cover.png');
-
-// JSON卡片段
-LinkZone.segment.json('{"prompt":"卡片内容"}');
-```
-
-发送复合消息：
-
-```javascript
-await sender.reply([
-    LinkZone.segment.at('123456'),
-    LinkZone.segment.text(' 请看这张图片：'),
-    LinkZone.segment.image('https://example.com/img.png')
-]);
-```
-
-### 消息推送
-
-主动向用户/群发送消息，无需在消息上下文中：
-
-```javascript
-// 发送私聊消息
-await LinkZone.push('qq', 'user_123', '你好！');
-
-// 发送群聊消息
-await LinkZone.push('qq', 'group_456', '群公告', 'group');
-
-// 指定机器人发送
-await LinkZone.push('qq', 'user_123', '你好！', 'private', 'bot_789');
-
-// 发送管理员消息
-await LinkZone.pushAdmin('qq', '系统通知');
-```
-
-### 事件注入
-
-向框架注入事件，触发插件链处理：
-
-```javascript
-await LinkZone.inject({
-    type: 'message',
-    platform: 'qq',
-    senderId: 'user_123',
-    senderName: '张三',
-    groupId: 'group_456',
-    message: '这是一条注入的消息'
-});
-```
-
-### 事件系统
-
-订阅和发布自定义事件：
-
-```javascript
-// 订阅事件
-await LinkZone.event.subscribe('custom_event');
-
-// 取消订阅
-await LinkZone.event.unsubscribe('custom_event');
-
-// 监听所有事件
-LinkZone.event.on((event) => {
-    console.log('收到事件:', event);
-});
-```
-
-### HTTP 路由
-
-注册 HTTP 接口，供外部系统调用：
-
-```javascript
-// 注册路由
-await LinkZone.http.register('/api/data', async (req) => {
-    return {
-        status: 200,
-        body: { message: 'Hello' }
-    };
-}, 'GET');
-
-// 便捷方法
-await LinkZone.http.get('/api/data', handler);
-await LinkZone.http.post('/api/data', handler);
-await LinkZone.http.put('/api/data', handler);
-await LinkZone.http.delete('/api/data', handler);
-
-// 注销路由
-await LinkZone.http.unregister('/api/data', 'GET');
-```
-
-### WebSocket
-
-注册 WebSocket 端点：
-
-```javascript
-await LinkZone.ws.register('/ws/chat', {
-    async onConnect(connId) {
-        console.log('连接:', connId);
-    },
-    async onMessage(connId, data) {
-        console.log('消息:', data);
-        await LinkZone.ws.send(connId, 'Echo: ' + data);
-    },
-    async onDisconnect(connId) {
-        console.log('断开:', connId);
+class WeatherPlugin extends Plugin {
+    async onStart() {
+        this.log.info('天气插件已启动');
+        this.cache = {};
     }
-});
 
-// 注销
-await LinkZone.ws.unregister('/ws/chat');
-```
+    async handleMessage(sender) {
+        const city = await sender.param(0);
+        if (!city) {
+            await sender.reply('请输入城市名，如：/weather 北京');
+            return;
+        }
 
-### 全局定时任务
+        // 从配置获取 API Key
+        const config = await sender.getConfig();
+        const data = await this.db.get(`weather_${city}`);
 
-不绑定到插件实例的定时任务：
+        if (data) {
+            await sender.reply(data);
+        } else {
+            const result = await LinkZone.httpGet(
+                `https://api.weather.com?city=${city}&key=${config.api_key}`
+            );
+            await this.db.set(`weather_${city}`, result);
+            await sender.reply(result);
+        }
+    }
 
-```javascript
-// 注册
-await LinkZone.cron.register('my-plugin', 'task1', '0 * * * *', () => {
-    console.log('每小时执行');
-});
+    async handleCron() {
+        // 每天早上 8 点推送天气
+        const cities = await this.db.list('weather_');
+        for (const key of cities) {
+            const city = key.replace('weather_', '');
+            const result = await LinkZone.httpGet(
+                `https://api.weather.com?city=${city}`
+            );
+            await this.db.set(key, result);
+        }
+    }
 
-// 更新
-await LinkZone.cron.update('my-plugin', 'task1', '*/30 * * * *');
+    async executeTool(sender, args) {
+        const { city } = args;
+        const data = await this.db.get(`weather_${city}`);
+        return { success: true, content: data || '暂无数据' };
+    }
 
-// 取消
-await LinkZone.cron.unregister('my-plugin', 'task1');
+    async onStop() {
+        this.log.info('天气插件已停止');
+    }
+}
 
-// 列出
-const tasks = await LinkZone.cron.list('my-plugin');
+WeatherPlugin.metadata = {
+    name: 'weather',
+    version: '1.0.0',
+    description: '天气查询',
+    triggers: [{ type: 0, pattern: '/weather' }],
+    cron: '0 8 * * *',
+    lifecycle_mode: 'persistent',
+    tool: {
+        enabled: true,
+        usage: '查询天气',
+        when_to_use: '用户询问天气时',
+        parameters: [
+            { name: 'city', type: 'string', description: '城市', required: true }
+        ]
+    },
+    config_schema: {
+        api_key: {
+            type: 'string',
+            label: 'API Key',
+            required: true
+        }
+    }
+};
 
-// 手动触发
-await LinkZone.cron.trigger('my-plugin', 'task1');
-```
-
-### 组件存储
-
-跨插件共享的键值存储（与插件私有 `this.getData` 不同，组件存储使用全局键名）：
-
-```javascript
-await LinkZone.storage.set('global_key', { value: 1 });
-const data = await LinkZone.storage.get('global_key', {});
-await LinkZone.storage.delete('global_key');
-const keys = await LinkZone.storage.list();
-```
-
-### 用户系统
-
-跨插件的用户管理：
-
-```javascript
-// 通过平台 ID 获取 LinkZone ID
-const { linkzone_id } = await LinkZone.user.getId('qq', 'platform_uid');
-
-// 获取或创建用户
-const user = await LinkZone.user.getOrCreate('qq', 'platform_uid', '显示名');
-// 返回: { linkzone_id, username, level, is_new }
-
-// 获取用户信息
-const info = await LinkZone.user.getInfo(linkzoneId);
-```
-
-### 日志
-
-结构化日志输出：
-
-```javascript
-LinkZone.logger.debug('模块名', '调试信息');
-LinkZone.logger.info('模块名', '普通信息');
-LinkZone.logger.warn('模块名', '警告信息');
-LinkZone.logger.error('模块名', '错误信息');
-LinkZone.logger.fatal('模块名', '致命错误');
-
-// 设置日志级别
-await LinkZone.logger.setLevel('debug', '模块名');
-
-// 获取日志级别
-const level = await LinkZone.logger.getLevel('模块名');
-```
-
-### 全局配置
-
-读取/写入其他组件的配置：
-
-```javascript
-const config = await LinkZone.config.get('other-plugin');
-await LinkZone.config.set('other-plugin', { key: 'value' });
-```
-
-### 全局数据库
-
-直接操作数据库（与 LZDB 不同，需手动管理 bucket）：
-
-```javascript
-await LinkZone.db.set('bucket', 'key', value);
-const data = await LinkZone.db.get('bucket', 'key', defaultValue);
-await LinkZone.db.delete('bucket', 'key');
-const exists = await LinkZone.db.exists('bucket', 'key');
-const keys = await LinkZone.db.list('bucket');
-await LinkZone.db.batchSet('bucket', [{ key: 'k1', value: 'v1' }]);
-await LinkZone.db.batchDelete('bucket', ['k1', 'k2']);
-const buckets = await LinkZone.db.listBuckets();
-```
-
-### 底层调用
-
-直接调用框架 IPC 方法：
-
-```javascript
-const result = await LinkZone.call('custom.method', { param: 'value' });
+module.exports = WeatherPlugin;
 ```
