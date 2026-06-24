@@ -94,22 +94,52 @@ async handleMessage(sender) {
 
 ```javascript
 triggers: [
-    { type: 3, pattern: 'image' }   // 匹配包含图片的消息
+    { type: 3, segment: 'image', segment_mode: 0 }   // 匹配包含图片的消息
 ]
 ```
-
-匹配规则：
-- `pattern` 指定消息段类型
-- 消息中包含该类型的消息段即匹配
 
 ### 段匹配触发参数
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | `type` | number | 是 | `3` |
-| `pattern` | string | 是 | 消息段类型名称 |
+| `segment` | string | 是 | 消息段类型名称 |
+| `segment_mode` | number | 否 | 匹配模式（默认 0） |
+| `segment_field` | string | 否 | 指定字段名（segment_mode 1/2 时必填） |
+| `pattern` | string | 否 | 匹配模式（segment_mode 1/2/3 时必填） |
 
-常见的段匹配 pattern：
+### segment_mode 说明
+
+| mode | 名称 | 说明 |
+|------|------|------|
+| `0` | type_only | 仅匹配段类型 |
+| `1` | field_exact | 段类型 + 指定字段精确匹配 |
+| `2` | field_regex | 段类型 + 指定字段正则匹配 |
+| `3` | display_regex | 段类型 + 显示文本正则匹配 |
+
+### 段匹配示例
+
+```javascript
+// 匹配所有图片
+triggers: [{ type: 3, segment: 'image', segment_mode: 0 }]
+
+// 匹配包含特定 URL 的图片（字段精确匹配）
+triggers: [{ type: 3, segment: 'image', segment_field: 'url', pattern: 'example.com', segment_mode: 1 }]
+
+// 匹配 URL 符合正则的图片（字段正则匹配）
+triggers: [{ type: 3, segment: 'image', segment_field: 'url', pattern: 'example\\.com', segment_mode: 2 }]
+```
+
+### 注解式段触发
+
+```javascript
+// @segment image                           // 匹配所有图片
+// @segment image.url=example.com           // 匹配特定 URL
+// @segment image.url~https?://             // 匹配 URL 正则
+// @segment image|example\\.com             // 匹配显示文本正则
+```
+
+常见段匹配 pattern：
 
 | pattern | 说明 |
 |---------|------|
@@ -139,8 +169,8 @@ triggers: [
 
 不定义触发器的插件不会响应消息，但仍然可以：
 - 通过 `cron` 执行定时任务
-- 通过 `tool` 被 AI 调用
-- 作为 loaded 模式的工具库被其他插件引用
+- 通过 `ai.tool` 被 AI 调用
+- 作为工具库被其他插件引用
 
 ```javascript
 // 定时任务插件（无触发器）
@@ -148,10 +178,10 @@ module.exports = {
     metadata: {
         name: 'daily-report',
         cron: '0 9 * * *',
-        lifecycle_mode: 'persistent'
+        is_service: true
     },
-    async handleCron() {
-        await LinkZone.sendGroupMessage('group_123', '今日报告...');
+    async onCron() {
+        await LinkZone.push('qq', 'group_123', '今日报告...');
     }
 };
 ```
@@ -223,7 +253,32 @@ metadata: {
 | event_type | 说明 | 对应钩子 |
 |------------|------|---------|
 | `"message"` | 消息事件 | `handleMessage` |
-| `"notice"` | 通知事件（入群、撤回等） | `handleNotice` |
-| `"meta"` | 元事件（心跳等） | `handleMeta` |
+| `"notice"` | 通知事件（入群、撤回等） | `onEvent` |
+| `"meta"` | 元事件（心跳等） | `onEvent` |
 
 > 当定义了 `triggers` 时，`event_types` 自动设为 `["message"]`。如需监听通知或元事件，需手动指定。
+
+## 框架内部事件订阅
+
+通过 `subscribe` 字段订阅框架内部事件，事件触发时调用 `onEvent(event)`：
+
+```javascript
+class MyPlugin extends Plugin {
+    async onEvent(event) {
+        switch (event.name) {
+            case 'adapter.connected':
+                LinkZone.logger.info('适配器已连接:', event.data.platform);
+                break;
+            case 'config.changed':
+                await this.reloadConfig();
+                break;
+        }
+    }
+}
+
+MyPlugin.metadata = {
+    name: 'my-plugin',
+    version: '1.0.0',
+    subscribe: ['adapter.connected', 'adapter.disconnected', 'config.changed'],
+};
+```
