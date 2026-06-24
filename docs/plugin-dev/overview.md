@@ -182,7 +182,7 @@ def handle_message(sender):
 | 启动 | 插件启动时调用（连接服务、开始工作） | `onStart()` | `on_start()` |
 | 停止 | 插件停止时调用（清理资源） | `onStop()` | `on_stop()` |
 | 消息处理 | 收到消息时调用 | `handleMessage(sender)` | `handle_message(sender)` |
-| 事件处理 | 收到事件时调用 | `handleEvent(sender)` | `handle_event(sender)` |
+| 框架事件 | 收到框架内部事件时调用 | `onEvent(event)` | `on_event(event)` |
 | 定时任务 | Cron 触发时调用 | `onCron()` | `on_cron()` |
 | AI 工具调用 | AI 直接调用时 | `executeTool(sender, args)` | `execute_tool(sender, args)` |
 
@@ -190,36 +190,36 @@ def handle_message(sender):
 
 ### 生命周期流程
 
-根据 `lifecycle_mode` 不同，生命周期流程有所区别：
+框架根据元信息自动推断插件的运行模式，**开发者无需手动配置**：
 
-**persistent 模式**（常驻运行）：
+**服务插件**（`is_service: true`）：
 ```
-注册 → 启动(onStart) → [运行中] → 停止(onStop)
+注册 → 启动(onStart) → [运行中，监听消息/cron/event] → 停止(onStop)
 ```
 
-**transient 模式**（按需触发，默认）：
+**普通插件**（有触发能力）：
 ```
 注册 → [等待触发] → handleMessage → [等待下次触发]
 ```
 
-**loaded 模式**（仅注册元信息）：
+**工具库**（无触发能力）：
 ```
 注册 → [不启动、不触发、不实例化]
 ```
 
-- **onStart**：插件正式开始工作，可以启动连接、注册定时任务等。仅在 `persistent` 模式下被调用。
+- **onStart**：插件正式开始工作，可以启动连接、注册定时任务等。仅在 `is_service: true` 时被调用。
 - **onStop**：插件被停止时调用，应清理定时器、关闭连接等。
-- **loaded 模式**：runtime 不会创建实例，不会调用任何钩子。如需初始化，应在模块顶层执行。loaded 模式不能使用 `this.db`/`self.db`，只能用 `LZDB`。
+- **工具库模式**：runtime 不会创建实例，不会调用任何钩子。如需初始化，应在模块顶层执行。工具库模式不能使用 `this.db`/`self.db`，只能用 `LZDB`。
 
 ### 自动推断规则
 
-未显式指定 `lifecycle_mode` 时，默认为 `transient`：
+框架根据以下条件自动推断运行模式：
 
-| 条件 | 建议设置 |
+| 条件 | 框架行为 |
 |------|---------|
-| `is_service: true` | `persistent` |
-| 工具库/辅助模块，不需要处理消息 | `loaded` |
-| 普通插件（命令、关键词、定时任务） | `transient`（默认值） |
+| `is_service: true` | 启动时调 `onStart()`，插件持续运行 |
+| 有 `command`/`keyword`/`regex`/`triggers`/`cron`/`ai` | 按需触发 handler |
+| 无任何触发能力 | 只注册元信息，不实例化 |
 
 ## 插件放置位置
 
@@ -228,6 +228,11 @@ def handle_message(sender):
 ## 热重载
 
 插件文件修改后框架自动检测并重新加载，无需重启。如需禁用，设置环境变量 `LINKZONE_HOT_RELOAD=false`。
+
+热重载行为：
+- **普通插件**：检测到文件变更后自动卸载旧实例、加载新代码
+- **服务插件**：调用 `onStop()` → 卸载旧实例 → 加载新代码 → 调用 `onStart()`
+- **工具库**：下次被 require 时使用新代码
 
 ## 错误处理与流程控制
 
