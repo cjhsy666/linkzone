@@ -16,15 +16,21 @@
 精确匹配以指定前缀开头的命令：
 
 ```javascript
+// Node.js
 triggers: [
     { type: 0, pattern: '/hello' }
 ]
 ```
 
+```python
+# Python
+"triggers": [{"type": 0, "pattern": "/hello"}]
+```
+
 匹配规则：
 - 消息以 `pattern` 开头即匹配
 - 支持参数：`/hello 世界` → 命令 `/hello`，参数 `世界`
-- 通过 `sender.param(0)` 获取参数
+- 通过 `sender.param(0)` / `sender.param(0)` 获取参数
 
 ### 命令触发参数
 
@@ -38,9 +44,15 @@ triggers: [
 消息中包含指定关键词即触发：
 
 ```javascript
+// Node.js
 triggers: [
     { type: 1, pattern: '你好' }
 ]
+```
+
+```python
+# Python
+"triggers": [{"type": 1, "pattern": "你好"}]
 ```
 
 匹配规则：
@@ -59,9 +71,15 @@ triggers: [
 使用正则表达式匹配消息：
 
 ```javascript
+// Node.js
 triggers: [
     { type: 2, pattern: '^抽奖\\s*(\\d+)' }
 ]
+```
+
+```python
+# Python
+"triggers": [{"type": 2, "pattern": r"^抽奖\s*(\d+)"}]
 ```
 
 匹配规则：
@@ -80,12 +98,20 @@ triggers: [
 正则匹配成功后，捕获组会自动设置到 Sender 上：
 
 ```javascript
+// Node.js
 // 触发器: { type: 2, pattern: '^抽奖\\s*(\\d+)' }
 // 消息: "抽奖 5"
 async handleMessage(sender) {
-    // 通过 param 获取
     const count = await sender.param(0); // "5"
 }
+```
+
+```python
+# Python
+# 触发器: {"type": 2, "pattern": r"^抽奖\s*(\d+)"}
+# 消息: "抽奖 5"
+def handle_message(sender):
+    count = sender.param(0)  # "5"
 ```
 
 ## 段匹配触发（type: 3）
@@ -93,9 +119,15 @@ async handleMessage(sender) {
 匹配消息中的特定消息段（如图片、@等）：
 
 ```javascript
+// Node.js
 triggers: [
     { type: 3, segment: 'image', segment_mode: 0 }   // 匹配包含图片的消息
 ]
+```
+
+```python
+# Python
+"triggers": [{"type": 3, "segment": "image", "segment_mode": 0}]
 ```
 
 ### 段匹配触发参数
@@ -120,6 +152,7 @@ triggers: [
 ### 段匹配示例
 
 ```javascript
+// Node.js
 // 匹配所有图片
 triggers: [{ type: 3, segment: 'image', segment_mode: 0 }]
 
@@ -130,13 +163,36 @@ triggers: [{ type: 3, segment: 'image', segment_field: 'url', pattern: 'example.
 triggers: [{ type: 3, segment: 'image', segment_field: 'url', pattern: 'example\\.com', segment_mode: 2 }]
 ```
 
+```python
+# Python
+# 匹配所有图片
+"triggers": [{"type": 3, "segment": "image", "segment_mode": 0}]
+
+# 匹配包含特定 URL 的图片（字段精确匹配）
+"triggers": [{"type": 3, "segment": "image", "segment_field": "url", "pattern": "example.com", "segment_mode": 1}]
+
+# 匹配 URL 符合正则的图片（字段正则匹配）
+"triggers": [{"type": 3, "segment": "image", "segment_field": "url", "pattern": "example\\.com", "segment_mode": 2}]
+```
+
 ### 注解式段触发
 
 ```javascript
+// Node.js
 // @segment image                           // 匹配所有图片
 // @segment image.url=example.com           // 匹配特定 URL
 // @segment image.url~https?://             // 匹配 URL 正则
 // @segment image|example\\.com             // 匹配显示文本正则
+```
+
+```python
+# Python
+"""
+@segment image                           # 匹配所有图片
+@segment image.url=example.com           # 匹配特定 URL
+@segment image.url~https?://             # 匹配 URL 正则
+@segment image|example\\.com             # 匹配显示文本正则
+"""
 ```
 
 常见段匹配 pattern：
@@ -158,10 +214,20 @@ triggers: [{ type: 3, segment: 'image', segment_field: 'url', pattern: 'example\
 一个插件可以定义多个触发器，满足任一即触发：
 
 ```javascript
+// Node.js
 triggers: [
     { type: 0, pattern: '/weather' },
     { type: 1, pattern: '天气' },
     { type: 2, pattern: '今天.*温度' }
+]
+```
+
+```python
+# Python
+"triggers": [
+    {"type": 0, "pattern": "/weather"},
+    {"type": 1, "pattern": "天气"},
+    {"type": 2, "pattern": "今天.*温度"}
 ]
 ```
 
@@ -173,7 +239,7 @@ triggers: [
 - 作为工具库被其他插件引用
 
 ```javascript
-// 定时任务插件（无触发器）
+// Node.js - 定时任务插件（无触发器）
 module.exports = {
     metadata: {
         name: 'daily-report',
@@ -186,6 +252,19 @@ module.exports = {
 };
 ```
 
+```python
+# Python - 定时任务插件（无触发器）
+class DailyReportPlugin(Plugin):
+    def on_cron(self):
+        LinkZone.push("qq", "group_123", "今日报告...")
+
+DailyReportPlugin.metadata = {
+    "name": "daily-report",
+    "cron": "0 9 * * *",
+    "is_service": True
+}
+```
+
 ## 触发器与权限
 
 触发器匹配后，框架还会检查权限：
@@ -195,12 +274,24 @@ module.exports = {
 3. **listen_only**：是否允许在只听群触发
 
 ```javascript
+// Node.js
 metadata: {
     name: 'admin-cmd',
     triggers: [{ type: 0, pattern: '/ban' }],
     permission_level: 6,           // 仅管理员
     adapters: ['qq'],              // 仅 QQ 平台
     listen_only: true              // 允许只听群
+}
+```
+
+```python
+# Python
+metadata = {
+    "name": "admin-cmd",
+    "triggers": [{"type": 0, "pattern": "/ban"}],
+    "permission_level": 6,         # 仅管理员
+    "adapters": ["qq"],            # 仅 QQ 平台
+    "listen_only": True            # 允许只听群
 }
 ```
 
@@ -213,6 +304,7 @@ metadata: {
 - 同 priority 按注册顺序执行
 
 ```javascript
+// Node.js
 // 高优先级插件（先执行）
 metadata: {
     name: 'content-filter',
@@ -228,6 +320,23 @@ metadata: {
 }
 ```
 
+```python
+# Python
+# 高优先级插件（先执行）
+metadata = {
+    "name": "content-filter",
+    "triggers": [{"type": 1, "pattern": "违规词"}],
+    "priority": -10
+}
+
+# 普通优先级
+metadata = {
+    "name": "echo",
+    "triggers": [{"type": 0, "pattern": "/echo"}],
+    "priority": 0
+}
+```
+
 ## 执行阶段
 
 `stage` 字段控制插件的执行方式：
@@ -238,11 +347,20 @@ metadata: {
 | `1` | 并行执行，同 stage 的插件同时执行 |
 
 ```javascript
-// 并行执行的插件
+// Node.js
 metadata: {
     name: 'parallel-logger',
     triggers: [{ type: 1, pattern: '日志' }],
     stage: 1
+}
+```
+
+```python
+# Python
+metadata = {
+    "name": "parallel-logger",
+    "triggers": [{"type": 1, "pattern": "日志"}],
+    "stage": 1
 }
 ```
 
@@ -252,17 +370,18 @@ metadata: {
 
 | event_type | 说明 | 对应钩子 |
 |------------|------|---------|
-| `"message"` | 消息事件 | `handleMessage` |
-| `"notice"` | 通知事件（入群、撤回等） | `onEvent` |
-| `"meta"` | 元事件（心跳等） | `onEvent` |
+| `"message"` | 消息事件 | `handleMessage` / `handle_message` |
+| `"notice"` | 通知事件（入群、撤回等） | `onEvent` / `on_event` |
+| `"meta"` | 元事件（心跳等） | `onEvent` / `on_event` |
 
 > 当定义了 `triggers` 时，`event_types` 自动设为 `["message"]`。如需监听通知或元事件，需手动指定。
 
 ## 框架内部事件订阅
 
-通过 `subscribe` 字段订阅框架内部事件，事件触发时调用 `onEvent(event)`：
+通过 `subscribe` 字段订阅框架内部事件，事件触发时调用 `onEvent(event)` / `on_event(event)`：
 
 ```javascript
+// Node.js
 class MyPlugin extends Plugin {
     async onEvent(event) {
         switch (event.name) {
@@ -281,4 +400,20 @@ MyPlugin.metadata = {
     version: '1.0.0',
     subscribe: ['adapter.connected', 'adapter.disconnected', 'config.changed'],
 };
+```
+
+```python
+# Python
+class MyPlugin(Plugin):
+    def on_event(self, event):
+        if event["name"] == "adapter.connected":
+            LinkZone.logger.info("适配器已连接:", event["data"]["platform"])
+        elif event["name"] == "config.changed":
+            self.reload_config()
+
+MyPlugin.metadata = {
+    "name": "my-plugin",
+    "version": "1.0.0",
+    "subscribe": ["adapter.connected", "adapter.disconnected", "config.changed"],
+}
 ```
