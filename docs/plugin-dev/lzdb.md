@@ -17,39 +17,35 @@ LZDB 采用**命名空间隔离**设计：
 
 ```javascript
 // Node.js 类式
-await this.db.set('key', 'value');
-const val = await this.db.get('key');
+await this.db.get('my-plugin', 'key');
+await this.db.set('my-plugin', 'key', 'value');
 ```
 
 ```python
 # Python 类式
-self.db.set("key", "value")
-val = self.db.get("key")
+self.db.get("my-plugin", "key")
+self.db.set("my-plugin", "key", "value")
 ```
 
-```javascript
-// Node.js 函数式
-await Plugin.db.set('key', 'value');
-const val = await Plugin.db.get('key');
-```
+> **注意**：`self.db` 在 `__init__` 中为 None，必须在 `on_start()` 及之后的钩子中使用。工具库模式插件不能使用 `self.db`，只能用 `LZDB`。
 
 ### LZDB 全局数据库
 
-`LZDB` 是全局对象，可在任何插件中使用，包括 loaded 模式的插件：
+`LZDB` 是全局对象，可在任何插件中使用，包括工具库模式的插件：
 
 ```javascript
 // Node.js
-await LZDB.set('namespace', 'key', 'value');
-const val = await LZDB.get('namespace', 'key');
+const db = new LZDB('my-namespace');
+await db.set('key', 'value');
+const val = await db.get('key');
 ```
 
 ```python
 # Python
-LZDB.set("namespace", "key", "value")
-val = LZDB.get("namespace", "key")
+db = LZDB("my-namespace")
+db.set("key", "value")
+val = db.get("key")
 ```
-
-> 当只传一个参数时，命名空间默认为当前插件自身。
 
 ## API 参考
 
@@ -57,23 +53,45 @@ val = LZDB.get("namespace", "key")
 
 | 方法 | Node.js | Python | 返回值 | 说明 |
 |------|---------|--------|--------|------|
-| 获取 | `await this.db.get(key)` | `self.db.get(key)` | `any` | 获取指定 key 的值 |
-| 设置 | `await this.db.set(key, value)` | `self.db.set(key, value)` | - | 设置 key-value |
-| 删除 | `await this.db.delete(key)` | `self.db.delete(key)` | - | 删除指定 key |
-| 列出 | `await this.db.list(prefix?)` | `self.db.list(prefix="")` | `string[]` | 列出指定前缀的 key |
-| 检查存在 | `await this.db.has(key)` | `self.db.has(key)` | `boolean` | 检查 key 是否存在 |
+| 获取 | `await this.db.get(bucket, key)` | `self.db.get(bucket, key)` | `any` | 获取指定 key 的值 |
+| 设置 | `await this.db.set(bucket, key, value)` | `self.db.set(bucket, key, value)` | - | 设置 key-value |
+| 删除 | `await this.db.delete(bucket, key)` | `self.db.delete(bucket, key)` | - | 删除指定 key |
+| 列出 | `await this.db.list(bucket)` | `self.db.list(bucket)` | `string[]` | 列出 bucket 下所有 key |
+| 检查存在 | `await this.db.exists(bucket, key)` | `self.db.exists(bucket, key)` | `boolean` | 检查 key 是否存在 |
+| 批量设置 | `await this.db.batchSet(bucket, items)` | `self.db.batch_set(bucket, items)` | - | 批量写入 |
+| 批量删除 | `await this.db.batchDelete(bucket, keys)` | `self.db.batch_delete(bucket, keys)` | - | 批量删除 |
+| 列出桶 | `await this.db.listBuckets()` | `self.db.list_buckets()` | `string[]` | 列出所有 bucket |
 
 ### LZDB 全局数据库
 
-| 方法 | Node.js | Python | 返回值 | 说明 |
-|------|---------|--------|--------|------|
-| 获取 | `await LZDB.get(ns, key?)` | `LZDB.get(ns, key=None)` | `any` | 获取数据 |
-| 设置 | `await LZDB.set(ns, key?, value?)` | `LZDB.set(ns, key=None, value=None)` | - | 设置数据 |
-| 删除 | `await LZDB.delete(ns, key?)` | `LZDB.delete(ns, key=None)` | - | 删除数据 |
-| 列出 | `await LZDB.list(ns, prefix?)` | `LZDB.list(ns, prefix="")` | `string[]` | 列出 key |
-| 检查 | `await LZDB.has(ns, key?)` | `LZDB.has(ns, key=None)` | `boolean` | 检查存在 |
+```javascript
+// Node.js
+const db = new LZDB('my-namespace');
+await db.get(key, defaultValue?)       // 获取
+await db.set(key, value)               // 设置
+await db.delete(key)                   // 删除
+await db.exists(key)                   // 检查存在
+await db.keys()                        // 列出所有 key
+await db.clear()                       // 清空命名空间
+```
 
-> 参数说明：`ns` 为命名空间，`key` 为键名。当只传 `ns` 时，操作当前插件命名空间下的数据。
+```python
+# Python
+db = LZDB("my-namespace")
+db.get(key, default=None)              # 获取
+db.set(key, value)                     # 设置
+db.delete(key)                         # 删除
+db.exists(key)                         # 检查存在
+db.keys()                              # 列出所有 key
+db.clear()                             # 清空命名空间
+```
+
+静态方法：
+
+| 方法 | 说明 |
+|------|------|
+| `LZDB.setDefaultClient(client)` | 设置默认客户端（runtime 自动调用） |
+| `LZDB.listNamespaces(client?)` | 列出所有命名空间 |
 
 ## 数据类型
 
@@ -90,14 +108,14 @@ LZDB 支持以下数据类型，会自动序列化/反序列化：
 
 ```javascript
 // 存储复杂对象
-await this.db.set('user_profile', {
+await db.set('user_profile', {
     name: '张三',
     level: 5,
     tags: ['活跃', 'VIP']
 });
 
 // 读取时自动反序列化
-const profile = await this.db.get('user_profile');
+const profile = await db.get('user_profile');
 // { name: '张三', level: 5, tags: ['活跃', 'VIP'] }
 ```
 
@@ -108,9 +126,10 @@ const profile = await this.db.get('user_profile');
 ```javascript
 class CounterPlugin extends Plugin {
     async handleMessage(sender) {
-        let count = await this.db.get('count') || 0;
+        const userId = sender.getSenderId();
+        let count = await this.db.get('counter', userId) || 0;
         count++;
-        await this.db.set('count', count);
+        await this.db.set('counter', userId, count);
         await sender.reply(`第 ${count} 次调用`);
     }
 }
@@ -122,11 +141,11 @@ class CounterPlugin extends Plugin {
 async handleMessage(sender) {
     const city = await sender.param(0);
     const cacheKey = `weather_${city}`;
-    let data = await this.db.get(cacheKey);
+    let data = await this.db.get('cache', cacheKey);
 
     if (!data) {
-        data = await LinkZone.httpGet(`https://api.weather.com?city=${city}`);
-        await this.db.set(cacheKey, data);
+        data = await fetch(`https://api.weather.com?city=${city}`);
+        await this.db.set('cache', cacheKey, data);
     }
 
     await sender.reply(data);
@@ -138,13 +157,13 @@ async handleMessage(sender) {
 ```javascript
 async handleMessage(sender) {
     const userId = sender.getSenderId();
-    const prefix = `user_${userId}_`;
-
-    // 列出用户所有数据
-    const keys = await this.db.list(prefix);
 
     // 设置用户数据
-    await this.db.set(`${prefix}score`, 100);
+    await this.db.set('users', `${userId}_score`, 100);
+
+    // 列出用户所有数据
+    const keys = await this.db.list('users');
+    const userKeys = keys.filter(k => k.startsWith(`${userId}_`));
 }
 ```
 
@@ -152,24 +171,28 @@ async handleMessage(sender) {
 
 ```javascript
 // 插件 A：写入数据
-await LZDB.set('shared_config', 'api_endpoint', 'https://api.example.com');
+const db = new LZDB('shared_config');
+await db.set('api_endpoint', 'https://api.example.com');
 
 // 插件 B：读取数据
-const endpoint = await LZDB.get('shared_config', 'api_endpoint');
+const db = new LZDB('shared_config');
+const endpoint = await db.get('api_endpoint');
 ```
 
-### 5. loaded 模式插件使用 LZDB
+### 5. 工具库模式插件使用 LZDB
 
-loaded 模式的插件不能使用 `this.db`，但可以使用 `LZDB`：
+工具库模式的插件不能使用 `this.db`，但可以使用 `LZDB`：
 
 ```javascript
-// utils.js (loaded 模式)
+// utils.js (工具库模式)
 module.exports = {
     async getConfig() {
-        return await LZDB.get('utils', 'config');
+        const db = new LZDB('utils');
+        return await db.get('config');
     },
     async setConfig(config) {
-        await LZDB.set('utils', 'config', config);
+        const db = new LZDB('utils');
+        await db.set('config', config);
     }
 };
 ```
@@ -189,14 +212,15 @@ config_api_key
 
 ### 前缀查询
 
-使用 `list(prefix)` 批量获取相关 key：
+使用 `list()` 批量获取相关 key：
 
 ```javascript
 // 获取所有用户数据
-const userKeys = await this.db.list('user_');
+const allKeys = await this.db.list('users');
+const userKeys = allKeys.filter(k => k.startsWith('user_'));
 
 // 获取所有缓存
-const cacheKeys = await this.db.list('cache_');
+const cacheKeys = await this.db.list('cache');
 ```
 
 ### 数据清理
@@ -204,14 +228,14 @@ const cacheKeys = await this.db.list('cache_');
 定期清理过期数据，避免数据库膨胀：
 
 ```javascript
-async handleCron() {
-    const cacheKeys = await this.db.list('cache_');
+async onCron() {
+    const keys = await this.db.list('cache');
     const now = Date.now();
 
-    for (const key of cacheKeys) {
-        const data = await this.db.get(key);
+    for (const key of keys) {
+        const data = await this.db.get('cache', key);
         if (data && data.expireAt < now) {
-            await this.db.delete(key);
+            await this.db.delete('cache', key);
         }
     }
 }
