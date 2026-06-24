@@ -9,6 +9,7 @@ AI 通过 function calling 直接调用插件的 `executeTool` 方法，获取�
 ### 配置
 
 ```javascript
+// Node.js
 metadata: {
     name: 'calculator',
     ai: {
@@ -18,6 +19,22 @@ metadata: {
             ],
             usage: '数学计算器，支持加减乘除',
             when_to_use: '当用户需要进行数学计算时'
+        }
+    }
+}
+```
+
+```python
+# Python
+metadata = {
+    "name": "calculator",
+    "ai": {
+        "tool": {
+            "parameters": [
+                {"name": "expression", "type": "string", "description": "数学表达式", "required": True}
+            ],
+            "usage": "数学计算器，支持加减乘除",
+            "when_to_use": "当用户需要进行数学计算时"
         }
     }
 }
@@ -59,11 +76,11 @@ metadata: {
 ### 实现 executeTool
 
 ```javascript
+// Node.js
 class CalculatorPlugin extends Plugin {
     async executeTool(sender, args) {
         const { expression } = args;
         try {
-            // 安全计算表达式
             const result = this.safeEval(expression);
             return {
                 success: true,
@@ -79,7 +96,6 @@ class CalculatorPlugin extends Plugin {
 
     safeEval(expr) {
         // 安全的数学表达式计算
-        // ...
     }
 }
 
@@ -97,6 +113,42 @@ CalculatorPlugin.metadata = {
 };
 
 module.exports = CalculatorPlugin;
+```
+
+```python
+# Python
+class CalculatorPlugin(Plugin):
+    def execute_tool(self, sender, args):
+        expression = args.get("expression", "")
+        try:
+            # 安全计算表达式
+            result = self.safe_eval(expression)
+            return {
+                "success": True,
+                "content": f"{expression} = {result}"
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": f"计算错误: {str(e)}"
+            }
+
+    def safe_eval(self, expr):
+        # 安全的数学表达式计算
+        pass
+
+CalculatorPlugin.metadata = {
+    "name": "calculator",
+    "ai": {
+        "tool": {
+            "parameters": [
+                {"name": "expression", "type": "string", "description": "数学表达式", "required": True}
+            ],
+            "usage": "数学计算器",
+            "when_to_use": "用户需要进行数学计算时"
+        }
+    }
+}
 ```
 
 ### executeTool 返回值
@@ -117,15 +169,33 @@ AI 在处理消息时，根据触发规则将命令注入到消息流中，触�
 ### 配置
 
 ```javascript
+// Node.js
 metadata: {
     name: 'weather',
     triggers: [{ type: 0, pattern: '/weather' }],
     ai: {
         inject: {
-            usage: '查询天气信息',                    // AI 看到的功能描述
-            format: '/weather {city}',               // AI 生成的命令格式
-            args: {                                  // 参数说明
+            usage: '查询天气信息',
+            format: '/weather {city}',
+            args: {
                 city: '城市名称，如：北京、上海'
+            }
+        }
+    }
+}
+```
+
+```python
+# Python
+metadata = {
+    "name": "weather",
+    "triggers": [{"type": 0, "pattern": "/weather"}],
+    "ai": {
+        "inject": {
+            "usage": "查询天气信息",
+            "format": "/weather {city}",
+            "args": {
+                "city": "城市名称，如：北京、上海"
             }
         }
     }
@@ -163,6 +233,7 @@ AI 会根据 `usage` 判断是否需要调用此工具，然后按照 `format` �
 ### 示例
 
 ```javascript
+// Node.js
 class TranslatePlugin extends Plugin {
     async handleMessage(sender) {
         const text = await sender.param(0);
@@ -190,12 +261,37 @@ TranslatePlugin.metadata = {
 module.exports = TranslatePlugin;
 ```
 
+```python
+# Python
+class TranslatePlugin(Plugin):
+    def handle_message(self, sender):
+        text = sender.param(0)
+        target_lang = sender.param(1) or "en"
+        # 翻译逻辑...
+        sender.reply(f"翻译结果: {result}")
+
+TranslatePlugin.metadata = {
+    "name": "translate",
+    "triggers": [{"type": 0, "pattern": "/translate"}],
+    "ai": {
+        "inject": {
+            "usage": "翻译文本到指定语言",
+            "format": "/translate {text} {lang}",
+            "args": {
+                "text": "要翻译的文本",
+                "lang": "目标语言（如 en、ja、ko）"
+            }
+        }
+    }
+}
+```
+
 ## 两种模式对比
 
 | 特性 | 直接调用 (tool) | 注入调用 (inject) |
 |------|----------------|------------------|
 | 配置字段 | `ai.tool` | `ai.inject` |
-| 处理钩子 | `executeTool` | `handleMessage` |
+| 处理钩子 | `executeTool` / `execute_tool` | `handleMessage` / `handle_message` |
 | 调用方式 | AI 直接调用 → 返回值 | AI 生成命令 → 消息流 |
 | 返回值 | 通过 `return` | 通过 `sender.reply()` |
 | 适用场景 | 需要返回数据给 AI | 需要发送消息给用户 |
@@ -207,6 +303,7 @@ module.exports = TranslatePlugin;
 一个插件可以同时支持两种模式：
 
 ```javascript
+// Node.js
 class WeatherPlugin extends Plugin {
     // 注入调用：用户直接使用 /weather 命令
     async handleMessage(sender) {
@@ -230,13 +327,11 @@ WeatherPlugin.metadata = {
     name: 'weather',
     triggers: [{ type: 0, pattern: '/weather' }],
     ai: {
-        // 注入调用配置
         inject: {
             usage: '查询天气信息',
             format: '/weather {city}',
             args: { city: '城市名称' }
         },
-        // 直接调用配置
         tool: {
             parameters: [
                 { name: 'city', type: 'string', description: '城市名称', required: true },
@@ -251,21 +346,72 @@ WeatherPlugin.metadata = {
 module.exports = WeatherPlugin;
 ```
 
+```python
+# Python
+class WeatherPlugin(Plugin):
+    # 注入调用：用户直接使用 /weather 命令
+    def handle_message(self, sender):
+        city = sender.param(0)
+        data = self.fetch_weather(city)
+        sender.reply(self.format_weather(data))
+
+    # 直接调用：AI 调用获取结构化数据
+    def execute_tool(self, sender, args):
+        city = args.get("city")
+        days = args.get("days", 1)
+        data = self.fetch_weather(city, days)
+        return {
+            "success": True,
+            "content": json.dumps(data)
+        }
+
+WeatherPlugin.metadata = {
+    "name": "weather",
+    "triggers": [{"type": 0, "pattern": "/weather"}],
+    "ai": {
+        "inject": {
+            "usage": "查询天气信息",
+            "format": "/weather {city}",
+            "args": {"city": "城市名称"}
+        },
+        "tool": {
+            "parameters": [
+                {"name": "city", "type": "string", "description": "城市名称", "required": True},
+                {"name": "days", "type": "number", "description": "预报天数", "required": False, "default": 1}
+            ],
+            "usage": "查询指定城市的天气信息",
+            "when_to_use": "当用户询问天气、气温、是否下雨等问题时"
+        }
+    }
+}
+```
+
 ## 注释语法
 
 在插件文件头部使用注释声明 AI 工具配置：
 
 ```javascript
+// Node.js
 // @ai-triggerable true
 // @ai-trigger-usage 查询天气信息
 // @ai-trigger-format /weather {city}
 // @ai-trigger-args {"city":"城市名称"}
 ```
 
+```python
+# Python
+"""
+@ai-triggerable true
+@ai-trigger-usage 查询天气信息
+@ai-trigger-format /weather {city}
+@ai-trigger-args {"city":"城市名称"}
+"""
+```
+
 ## 最佳实践
 
-1. **优先使用直接调用**：如果只需要返回数据给 AI，使用 `tool` + `executeTool` 效率更高
+1. **优先使用直接调用**：如果只需要返回数据给 AI，使用 `tool` + `executeTool`/`execute_tool` 效率更高
 2. **描述要清晰**：`usage` 和 `when_to_use` 描述越清晰，AI 判断越准确
 3. **参数要完整**：`parameters` 定义完整，AI 才能正确传参
-4. **错误要友好**：`executeTool` 返回 `success: false` 时，`error` 应包含可理解的错误信息
-5. **幂等性**：AI 可能重复调用同一工具，`executeTool` 应尽量保证幂等
+4. **错误要友好**：`executeTool`/`execute_tool` 返回 `success: false` 时，`error` 应包含可理解的错误信息
+5. **幂等性**：AI 可能重复调用同一工具，`executeTool`/`execute_tool` 应尽量保证幂等
