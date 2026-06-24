@@ -167,6 +167,7 @@ args: {
 `config_schema` 定义插件的可配置项，框架据此在管理后台生成配置界面：
 
 ```javascript
+// Node.js
 config_schema: {
     api_key: {
         type: 'string',           // 类型：string / number / bool / select
@@ -195,6 +196,41 @@ config_schema: {
         options: [
             { label: 'WebSocket', value: 'websocket' },
             { label: 'HTTP 长轮询', value: 'long_polling' }
+        ]
+    }
+}
+```
+
+```python
+# Python
+config_schema = {
+    "api_key": {
+        "type": "string",
+        "label": "API Key",
+        "default": "",
+        "description": "服务 API 密钥",
+        "required": True
+    },
+    "max_retries": {
+        "type": "number",
+        "label": "最大重试次数",
+        "default": 3,
+        "description": "API 请求最大重试次数"
+    },
+    "sandbox": {
+        "type": "bool",
+        "label": "沙箱模式",
+        "default": False,
+        "description": "是否使用沙箱环境"
+    },
+    "mode": {
+        "type": "select",
+        "label": "运行模式",
+        "default": "websocket",
+        "description": "连接方式",
+        "options": [
+            {"label": "WebSocket", "value": "websocket"},
+            {"label": "HTTP 长轮询", "value": "long_polling"}
         ]
     }
 }
@@ -245,6 +281,7 @@ config_schema: {
 ### 最小化插件
 
 ```javascript
+// Node.js
 module.exports = {
     metadata: {
         name: 'echo',
@@ -258,19 +295,31 @@ module.exports = {
 };
 ```
 
+```python
+# Python
+metadata = {
+    "name": "echo",
+    "version": "1.0.0",
+    "description": "回声插件",
+    "triggers": [{"type": 0, "pattern": "/echo"}]
+}
+
+def handle_message(sender):
+    sender.reply(sender.get_message())
+```
+
 ### 完整配置插件
 
 ```javascript
+// Node.js
 class WeatherPlugin extends Plugin {
     async handleMessage(sender) {
         const city = await sender.param(0);
-        // 查询天气...
         await sender.reply(`${city}今天晴，25°C`);
     }
 
     async executeTool(sender, args) {
         const { city, days } = args;
-        // 查询天气...
         return { success: true, content: `${city}今天晴，25°C` };
     }
 }
@@ -316,4 +365,57 @@ WeatherPlugin.metadata = {
 };
 
 module.exports = WeatherPlugin;
+```
+
+```python
+# Python
+class WeatherPlugin(Plugin):
+    def handle_message(self, sender):
+        city = sender.param(0)
+        sender.reply(f"{city}今天晴，25°C")
+
+    def execute_tool(self, sender, args):
+        city = args.get("city")
+        days = args.get("days", 1)
+        return {"success": True, "content": f"{city}今天晴，25°C"}
+
+WeatherPlugin.metadata = {
+    "name": "weather",
+    "version": "1.2.0",
+    "description": "天气查询插件",
+    "category": "工具",
+    "author": "LinkZone Team",
+    "tags": ["天气", "查询"],
+    "triggers": [
+        {"type": 0, "pattern": "/weather"},
+        {"type": 1, "pattern": "天气"}
+    ],
+    "event_types": ["message"],
+    "priority": 10,
+    "permission_level": 1,
+    "adapters": ["qq", "web"],
+    "is_service": True,
+    "ai": {
+        "tool": {
+            "parameters": [
+                {"name": "city", "type": "string", "description": "城市名称", "required": True},
+                {"name": "days", "type": "number", "description": "预报天数", "required": False, "default": 1}
+            ],
+            "usage": "查询指定城市的天气信息",
+            "when_to_use": "当用户询问天气、气温、是否下雨等问题时"
+        },
+        "inject": {
+            "usage": "查询天气信息",
+            "format": "/weather {city}",
+            "args": {"city": "城市名称"}
+        }
+    },
+    "config_schema": {
+        "api_key": {
+            "type": "string",
+            "label": "API Key",
+            "required": True
+        }
+    }
+}
 ```
