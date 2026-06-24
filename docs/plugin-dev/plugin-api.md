@@ -389,6 +389,273 @@ LinkZone.ws.unregister("/ws/chat")
 LinkZone.ws.send(conn_id, "Hello")
 ```
 
+## 青龙面板 API
+
+通过 `LinkZone.qinglong` 访问青龙面板的全部 API。使用前需先通过管理接口配置青龙面板连接信息。
+
+### 服务状态
+
+```javascript
+// Node.js
+const { connected } = await LinkZone.qinglong.status();
+const config = await LinkZone.qinglong.getConfig();
+await LinkZone.qinglong.setConfig({
+    url: 'http://192.168.1.100:5700',
+    client_id: 'xxx',
+    client_secret: 'xxx'
+});
+```
+
+```python
+# Python
+result = LinkZone.qinglong.status()
+connected = result.get("connected", False)
+config = LinkZone.qinglong.get_config()
+LinkZone.qinglong.set_config({
+    "url": "http://192.168.1.100:5700",
+    "client_id": "xxx",
+    "client_secret": "xxx"
+})
+```
+
+### 定时任务管理 (cron)
+
+```javascript
+// Node.js
+const tasks = await LinkZone.qinglong.cron.list('搜索关键词');
+const task = await LinkZone.qinglong.cron.get(taskId);
+const newTask = await LinkZone.qinglong.cron.create({
+    command: 'task extra/daily_bonus.js',
+    schedule: '0 9 * * *',
+    name: '每日签到',
+    labels: ['签到']
+});
+await LinkZone.qinglong.cron.update({ id: task.id, schedule: '0 10 * * *' });
+await LinkZone.qinglong.cron.delete([task.id]);
+await LinkZone.qinglong.cron.run([task.id]);
+await LinkZone.qinglong.cron.stop([task.id]);
+await LinkZone.qinglong.cron.enable([task.id]);
+await LinkZone.qinglong.cron.disable([task.id]);
+const { content } = await LinkZone.qinglong.cron.log(String(task.id));
+const logs = await LinkZone.qinglong.cron.logs(String(task.id));
+await LinkZone.qinglong.cron.pin([task.id]);
+await LinkZone.qinglong.cron.unpin([task.id]);
+await LinkZone.qinglong.cron.addLabels([task.id], ['新标签']);
+await LinkZone.qinglong.cron.deleteLabels([task.id], ['旧标签']);
+await LinkZone.qinglong.cron.import();
+```
+
+```python
+# Python
+tasks = LinkZone.qinglong.cron.list("搜索关键词")
+task = LinkZone.qinglong.cron.get(str(task_id))
+new_task = LinkZone.qinglong.cron.create(
+    command="task extra/daily_bonus.js",
+    schedule="0 9 * * *",
+    name="每日签到",
+    labels=["签到"]
+)
+LinkZone.qinglong.cron.update(task["id"], schedule="0 10 * * *")
+LinkZone.qinglong.cron.delete([task["id"]])
+LinkZone.qinglong.cron.run([task["id"]])
+LinkZone.qinglong.cron.stop([task["id"]])
+LinkZone.qinglong.cron.enable([task["id"]])
+LinkZone.qinglong.cron.disable([task["id"]])
+result = LinkZone.qinglong.cron.log(str(task["id"]))
+logs = LinkZone.qinglong.cron.logs(str(task["id"]))
+LinkZone.qinglong.cron.pin([task["id"]])
+LinkZone.qinglong.cron.unpin([task["id"]])
+LinkZone.qinglong.cron.add_labels([task["id"]], ["新标签"])
+LinkZone.qinglong.cron.delete_labels([task["id"]], ["旧标签"])
+LinkZone.qinglong.cron.import_crons()
+```
+
+### 环境变量管理 (env)
+
+```javascript
+// Node.js
+const envs = await LinkZone.qinglong.env.list('COOKIE');
+await LinkZone.qinglong.env.create([
+    { name: 'JD_COOKIE', value: 'pt_key=xxx;pt_pin=yyy;', remarks: '账号1' }
+]);
+await LinkZone.qinglong.env.update({ id: 1, name: 'JD_COOKIE', value: '新值' });
+await LinkZone.qinglong.env.delete([1, 2]);
+await LinkZone.qinglong.env.enable([1]);
+await LinkZone.qinglong.env.disable([1]);
+const env = await LinkZone.qinglong.env.get(1);
+await LinkZone.qinglong.env.move(1, 0, 2);
+await LinkZone.qinglong.env.updateName([1, 2], 'NEW_NAME');
+```
+
+```python
+# Python
+envs = LinkZone.qinglong.env.list("COOKIE")
+LinkZone.qinglong.env.create([
+    {"name": "JD_COOKIE", "value": "pt_key=xxx;pt_pin=yyy;", "remarks": "账号1"}
+])
+LinkZone.qinglong.env.update(1, "JD_COOKIE", "新值")
+LinkZone.qinglong.env.delete([1, 2])
+LinkZone.qinglong.env.enable([1])
+LinkZone.qinglong.env.disable([1])
+env = LinkZone.qinglong.env.get(1)
+LinkZone.qinglong.env.move(1, 0, 2)
+LinkZone.qinglong.env.update_name([1, 2], "NEW_NAME")
+```
+
+### 订阅管理 (subscription)
+
+```javascript
+// Node.js
+const subs = await LinkZone.qinglong.subscription.list();
+const sub = await LinkZone.qinglong.subscription.create({
+    name: '京东脚本',
+    url: 'https://github.com/example/jd_scripts.git',
+    branch: 'main',
+    schedule: '0 0 * * *'
+});
+await LinkZone.qinglong.subscription.update({ id: sub.id, schedule: '0 12 * * *' });
+await LinkZone.qinglong.subscription.delete([sub.id]);
+await LinkZone.qinglong.subscription.run([sub.id]);
+await LinkZone.qinglong.subscription.stop([sub.id]);
+await LinkZone.qinglong.subscription.enable([sub.id]);
+await LinkZone.qinglong.subscription.disable([sub.id]);
+const { content } = await LinkZone.qinglong.subscription.log(sub.id);
+```
+
+```python
+# Python
+subs = LinkZone.qinglong.subscription.list()
+sub = LinkZone.qinglong.subscription.create(
+    name="京东脚本",
+    url="https://github.com/example/jd_scripts.git",
+    branch="main",
+    schedule="0 0 * * *"
+)
+LinkZone.qinglong.subscription.update(sub["id"], schedule="0 12 * * *")
+LinkZone.qinglong.subscription.delete([sub["id"]])
+LinkZone.qinglong.subscription.run([sub["id"]])
+LinkZone.qinglong.subscription.stop([sub["id"]])
+LinkZone.qinglong.subscription.enable([sub["id"]])
+LinkZone.qinglong.subscription.disable([sub["id"]])
+result = LinkZone.qinglong.subscription.log(sub["id"])
+```
+
+### 脚本管理 (script)
+
+```javascript
+// Node.js
+const scripts = await LinkZone.qinglong.script.list();
+const { content } = await LinkZone.qinglong.script.get('daily_bonus.js');
+const detail = await LinkZone.qinglong.script.detail('daily_bonus.js');
+await LinkZone.qinglong.script.save({
+    name: 'my_script.js',
+    content: 'console.log("Hello from LinkZone!")'
+});
+await LinkZone.qinglong.script.delete('my_script.js');
+await LinkZone.qinglong.script.run('my_script.js');
+await LinkZone.qinglong.script.stop('my_script.js');
+await LinkZone.qinglong.script.rename('old.js', 'new.js');
+```
+
+```python
+# Python
+scripts = LinkZone.qinglong.script.list()
+result = LinkZone.qinglong.script.get("daily_bonus.js")
+detail = LinkZone.qinglong.script.detail("daily_bonus.js")
+LinkZone.qinglong.script.save("my_script.js", 'print("Hello from LinkZone!")')
+LinkZone.qinglong.script.delete("my_script.js")
+LinkZone.qinglong.script.run("my_script.js")
+LinkZone.qinglong.script.stop("my_script.js")
+LinkZone.qinglong.script.rename("old.js", "new.js")
+```
+
+### 系统操作 (system)
+
+```javascript
+// Node.js
+const { version } = await LinkZone.qinglong.system.info();
+const update = await LinkZone.qinglong.system.checkUpdate();
+await LinkZone.qinglong.system.update();
+await LinkZone.qinglong.system.reload('config');
+await LinkZone.qinglong.system.notify('任务完成', '所有签到任务已执行完毕');
+await LinkZone.qinglong.system.commandRun('ql repo');
+await LinkZone.qinglong.system.commandStop({ pid: 12345 });
+const data = await LinkZone.qinglong.system.exportData();
+```
+
+```python
+# Python
+info = LinkZone.qinglong.system.info()
+update = LinkZone.qinglong.system.check_update()
+LinkZone.qinglong.system.update()
+LinkZone.qinglong.system.reload("config")
+LinkZone.qinglong.system.notify("任务完成", "所有签到任务已执行完毕")
+LinkZone.qinglong.system.command_run("ql repo")
+LinkZone.qinglong.system.command_stop(pid=12345)
+data = LinkZone.qinglong.system.export_data()
+```
+
+### 依赖管理 (dependence)
+
+```javascript
+// Node.js
+const deps = await LinkZone.qinglong.dependence.list('', 0); // type: 0=nodejs
+await LinkZone.qinglong.dependence.create([
+    { name: 'axios', type: 0, remark: 'HTTP 客户端' }
+]);
+await LinkZone.qinglong.dependence.delete([1, 2]);
+await LinkZone.qinglong.dependence.forceDelete([1]);
+await LinkZone.qinglong.dependence.reinstall([1]);
+await LinkZone.qinglong.dependence.cancel([1]);
+```
+
+```python
+# Python
+deps = LinkZone.qinglong.dependence.list("", 0)  # type: 0=nodejs
+LinkZone.qinglong.dependence.create([
+    {"name": "requests", "type": 1, "remark": "HTTP 库"}
+])
+LinkZone.qinglong.dependence.delete([1, 2])
+LinkZone.qinglong.dependence.force_delete([1])
+LinkZone.qinglong.dependence.reinstall([1])
+LinkZone.qinglong.dependence.cancel([1])
+```
+
+### 配置文件管理 (config)
+
+```javascript
+// Node.js
+const files = await LinkZone.qinglong.config.list();
+const { content } = await LinkZone.qinglong.config.get('config.sh');
+await LinkZone.qinglong.config.save({
+    name: 'config.sh',
+    content: 'export JD_COOKIE="pt_key=xxx;pt_pin=yyy;"'
+});
+```
+
+```python
+# Python
+files = LinkZone.qinglong.config.list()
+result = LinkZone.qinglong.config.get("config.sh")
+LinkZone.qinglong.config.save("config.sh", 'export JD_COOKIE="pt_key=xxx;pt_pin=yyy;"')
+```
+
+### 日志管理 (log)
+
+```javascript
+// Node.js
+const logs = await LinkZone.qinglong.log.list();
+const { content } = await LinkZone.qinglong.log.detail('run.log', '/ql/data/log');
+await LinkZone.qinglong.log.delete({ filename: 'old.log', path: '/ql/data/log' });
+```
+
+```python
+# Python
+logs = LinkZone.qinglong.log.list()
+result = LinkZone.qinglong.log.detail("run.log", "/ql/data/log")
+LinkZone.qinglong.log.delete("old.log", "/ql/data/log")
+```
+
 ## 热重载
 
 框架支持插件热重载，修改插件代码后自动重新加载，无需重启服务：
