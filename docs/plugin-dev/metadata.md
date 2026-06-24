@@ -18,47 +18,50 @@
 | `icon` | string | 否 | `""` | 图标 |
 | `tags` | string[] | 否 | `[]` | 标签 |
 | `dependencies` | string[] | 否 | `[]` | 依赖的其他组件 |
-| `owner` | string | 否 | `"nodejs-runtime"` | 组件所有者 |
 | `platform` | string | 否 | `""` | 适配器平台标识（适配器必填） |
 
 ### 触发器
 
 | 字段 | 类型 | 必填 | 默认值 | 说明 |
 |------|------|------|--------|------|
-| `triggers` | Trigger[] | 否 | `[]` | 触发器列表 |
+| `command` | string \| string[] | 否 | - | 命令触发简写，等价 `triggers: [{ type: 0, pattern }]` |
+| `keyword` | string \| string[] | 否 | - | 关键词触发简写，等价 `triggers: [{ type: 1, pattern }]` |
+| `regex` | string \| string[] | 否 | - | 正则触发简写，等价 `triggers: [{ type: 2, pattern }]` |
+| `triggers` | Trigger[] | 否 | `[]` | 完整触发器列表（高级场景，如段触发） |
 | `event_types` | string[] | 否 | `["message"]` | 订阅的事件类型：`"message"` / `"notice"` / `"meta"`。有触发器时自动设为 `["message"]` |
+| `subscribe` | string[] | 否 | `[]` | 订阅的框架内部事件列表。声明后，`onEvent(event)` 会在对应事件触发时被调用 |
+
+> **简写示例**：`command: '/hello'` 等价于 `triggers: [{ type: 0, pattern: '/hello' }]`，`keyword: ['天气', 'weather']` 等价于两个 type:1 触发器。简写和 `triggers` 可以同时使用，SDK 会自动合并。
+
+**框架内部事件列表**：
+
+| 事件名 | 说明 | Data |
+|--------|------|------|
+| `bot.started` | 框架启动完成 | `null` |
+| `bot.stopped` | 框架停止 | `null` |
+| `bot.restart` | 框架重启 | `null` |
+| `adapter.connected` | 适配器连接 | `{ adapter, platform, timestamp }` |
+| `adapter.disconnected` | 适配器断开 | `{ adapter, platform, timestamp }` |
+| `plugin.loaded` | 插件加载 | `{ name, unique_key, version, author, timestamp }` |
+| `plugin.unloaded` | 插件卸载 | `{ unique_key, name, timestamp }` |
+| `config.changed` | 配置变更 | config 对象 |
+| `state.changed` | 组件状态变更 | `{ component, enabled, timestamp }` |
+| `error.reported` | 错误上报 | error 对象 |
+| `message.received` | 收到消息 | 消息 event 对象 |
 
 ### 行为与权限
 
 | 字段 | 类型 | 必填 | 默认值 | 说明 |
 |------|------|------|--------|------|
 | `priority` | number | 否 | `0` | 优先级，值越小越先执行 |
-| `is_service` | boolean | 否 | `false` | 是否为服务插件（自动设为 persistent 模式） |
+| `is_service` | boolean | 否 | `false` | 是否为服务插件（启动时调用 onStart，插件持续运行） |
 | `permission_level` | number | 否 | `1` | 触发权限等级，范围 1-7。用户/群的等级 ≥ 插件等级才能触发。1-5 为普通用户，6-7 为管理员 |
 | `listen_only` | boolean | 否 | `false` | 只听模式，可在只听群触发 |
 | `stage` | number | 否 | `0` | 执行阶段（0=顺序 / 1=并行） |
 | `adapters` | string[] | 否 | `[]` | 限定适配器平台（如 `['qq', 'web']`），留空=全部 |
-| `lifecycle_mode` | string | 否 | 自动推断 | 生命周期模式 |
 | `is_public` | boolean | 否 | `false` | 是否上架插件市场 |
 | `is_encrypted` | boolean | 否 | `true` | 是否加密 |
-
-### 生命周期模式
-
-| 值 | 说明 | 适用场景 |
-|-----|------|---------|
-| `"transient"` | 瞬态，按需启动，处理完消息后空闲 | 命令、关键词、定时任务等普通插件 |
-| `"persistent"` | 持久，启动后一直运行，适合后台服务 | 监控、轮询、长连接服务 |
-| `"loaded"` | 只加载注册元信息，不实例化、不启动 | 工具库、被其他插件 require 的辅助模块 |
-
-**自动推断规则**（未显式指定 `lifecycle_mode` 时，默认为 `transient`）：
-
-| 条件 | 建议设置 |
-|------|---------|
-| `is_service: true` | `persistent` |
-| 工具库/辅助模块，不需要处理消息 | `loaded` |
-| 普通插件（命令、关键词、定时任务） | `transient`（默认值） |
-
-> **注意**：loaded 模式的插件 runtime **不会创建实例，不会调用任何钩子**（包括 `onStart`）。如需初始化，应在模块顶层执行。loaded 模式插件不能使用 `this.db`/`self.db`，只能用 `LZDB`。
+| `market` | boolean | 否 | `false` | 是否从市场安装 |
 
 ### 配置与监控
 
@@ -93,51 +96,71 @@ Cron 表达式支持 **5 位标准格式**和 **6 位含秒格式**：
 | `0 9 * * 1` | 每周一 9 点 |
 | `30 8,18 * * *` | 每天 8:30 和 18:30 |
 
-### AI 触发
+### AI 配置
 
 | 字段 | 类型 | 必填 | 默认值 | 说明 |
 |------|------|------|--------|------|
-| `tool` | ToolConfig | 否 | `null` | AI 工具配置（直接调用模式） |
-| `ai_triggerable` | boolean | 否 | `false` | 是否可被 AI 触发（注入调用模式） |
-| `ai_trigger_usage` | string | 否 | `""` | AI 触发时的使用说明 |
-| `ai_trigger_format` | string | 否 | `""` | 命令格式模板 |
-| `ai_trigger_args` | object | 否 | `{}` | 参数说明 |
+| `ai` | object | 否 | `null` | AI 配置对象，包含 `tool`（工具模式）和 `inject`（注入模式），两者可并存 |
 
-### 注释语法对照
+**`ai` 对象结构**：
 
-在插件文件头部使用注释声明元信息，框架会自动解析：
+```javascript
+ai: {
+    // 工具模式：AI 通过 function calling 直接调用 executeTool
+    tool: {
+        parameters: [                             // 参数列表
+            { name: 'city', type: 'string', description: '城市名', required: true }
+        ],
+        usage: '查询天气',                        // 使用说明（给 LLM 看）
+        when_to_use: '用户询问天气时使用',         // 何时调用（给 LLM 看）
+        continue: false,                          // 工具调用后是否继续对话
+        chainable: false,                         // 是否可链式调用
+        max_calls: 0,                             // 单次对话最大调用次数（0=不限）
+        confirm: false,                           // 是否需要用户确认后执行
+        cooldown: 0,                              // 冷却时间（秒）
+        timeout: 0                                // 超时时间（秒）
+    },
 
-| 注解 | 对应字段 | 示例 |
-|------|---------|------|
-| `@name` | name | `@name my-plugin` |
-| `@version` | version | `@version 1.0.0` |
-| `@description` | description | `@description 插件说明` |
-| `@author` | author | `@author LinkZone Team` |
-| `@category` | category | `@category 工具` |
-| `@icon` | icon | `@icon 🌤️` |
-| `@license` | license | `@license MIT` |
-| `@homepage` | homepage | `@homepage https://example.com` |
-| `@tags` | tags | `@tags 天气,查询` |
-| `@dependencies` | dependencies | `@dependencies utils,http` |
-| `@adapters` | adapters | `@adapters qq,web` |
-| `@owner` | owner | `@owner nodejs-runtime` |
-| `@platform` | platform | `@platform qq` |
-| `@priority` | priority | `@priority 10` |
-| `@permission-level` | permission_level | `@permission-level 6`（数字 1-7） |
-| `@stage` | stage | `@stage 1` |
-| `@lifecycle` | lifecycle_mode | `@lifecycle persistent` |
-| `@service` | is_service | `@service true` |
-| `@cron` | cron | `@cron 0 8 * * *` |
-| `@public true` | is_public | `@public true` |
-| `@encrypted false` | is_encrypted | `@encrypted false` |
-| `@listen-only true` | listen_only | `@listen-only true` |
-| `@config-schema` | config_schema | `@config-schema {"key":{"type":"string"}}` |
-| `@extra` | extra | `@extra {"key":"value"}` |
-| `@ai-triggerable` | ai_triggerable | `@ai-triggerable true` |
-| `@ai-trigger-usage` | ai_trigger_usage | `@ai-trigger-usage 查询天气` |
-| `@ai-trigger-format` | ai_trigger_format | `@ai-trigger-format /weather <城市>` |
-| `@ai-trigger-args` | ai_trigger_args | `@ai-trigger-args {"city":{"type":"string","required":true}}` |
-| `@tool` | tool | `@tool` 后接 JSON 块 |
+    // 注入模式：AI 通过全局 inject 工具注入命令，触发 handleMessage
+    inject: {
+        usage: 'qq点歌 七里香',                    // 使用示例（给 LLM 看）
+        format: '{platform}点歌 {song}',           // 命令格式模板
+        args: {                                   // 参数说明（一句话描述）
+            platform: '音乐平台，可选：qq/网易云/汽水',
+            song: '歌曲名称，如：晴天'
+        }
+    }
+}
+```
+
+> 工具名称和描述自动使用插件的 `name` 和 `description`，无需在 `tool` 中重复指定。
+
+**`ai.tool.parameters` 子字段**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `name` | string | 是 | 参数名 |
+| `type` | string | 是 | 参数类型：`string`/`number`/`boolean`/`array`/`object` |
+| `description` | string | 是 | 参数描述 |
+| `required` | boolean | 否 | 是否必填，默认 `false` |
+| `enum` | string[] | 否 | 枚举值列表 |
+| `default` | any | 否 | 默认值 |
+| `example` | string | 否 | 示例值 |
+
+**`ai.inject.args` 写法规范**：
+
+args 的值是一句话描述，写给 LLM 看，要包含「是什么 + 能填什么 + 默认什么」：
+
+```javascript
+args: {
+    song: '歌曲名称，必填。只填歌名不填歌手，如：晴天',
+    platform: '平台可选值：qq/网易云/汽水/抖音/酷我，默认咪咕'
+}
+```
+
+> **两种模式对比**：
+> - `tool` — LLM 有结构化参数，调用更精确，走 `executeTool`，不经过消息管道
+> - `inject` — 走消息管道，其他插件可联动，经过权限检查，但 LLM 需构造命令字符串
 
 ### config_schema 详解
 
@@ -178,6 +201,44 @@ config_schema: {
 ```
 
 框架会自动为所有组件追加 `log_level` 配置项。
+
+## 注释语法对照
+
+在插件文件头部使用注释声明元信息，框架会自动解析：
+
+| 注解 | 对应字段 | 示例 |
+|------|---------|------|
+| `@name` | name | `@name my-plugin` |
+| `@version` | version | `@version 1.0.0` |
+| `@description` | description | `@description 插件说明` |
+| `@author` | author | `@author LinkZone Team` |
+| `@category` | category | `@category 工具` |
+| `@icon` | icon | `@icon 🌤️` |
+| `@license` | license | `@license MIT` |
+| `@homepage` | homepage | `@homepage https://example.com` |
+| `@tags` | tags | `@tags 天气,查询` |
+| `@dependencies` | dependencies | `@dependencies utils,http` |
+| `@adapters` | adapters | `@adapters qq,web` |
+| `@platform` | platform | `@platform qq` |
+| `@priority` | priority | `@priority 10` |
+| `@permission-level` | permission_level | `@permission-level 6`（数字 1-7） |
+| `@stage` | stage | `@stage 1` |
+| `@service` | is_service | `@service true` |
+| `@cron` | cron | `@cron 0 8 * * *` |
+| `@public true` | is_public | `@public true` |
+| `@encrypted false` | is_encrypted | `@encrypted false` |
+| `@listen-only true` | listen_only | `@listen-only true` |
+| `@config-schema` | config_schema | `@config-schema {"key":{"type":"string"}}` |
+| `@extra` | extra | `@extra {"key":"value"}` |
+| `@command` | triggers (type:0) | `@command /hello` |
+| `@keyword` | triggers (type:1) | `@keyword 天气` |
+| `@rule` | triggers (type:2) | `@rule ^\\d+$` |
+| `@segment` | triggers (type:3) | `@segment image` |
+| `@subscribe` | subscribe | `@subscribe adapter.connected,config.changed` |
+| `@ai-triggerable` | ai.inject | `@ai-triggerable true` |
+| `@ai-trigger-usage` | ai.inject.usage | `@ai-trigger-usage qq点歌 七里香` |
+| `@ai-trigger-format` | ai.inject.format | `@ai-trigger-format {platform}点歌 {song}` |
+| `@ai-trigger-args` | ai.inject.args | `@ai-trigger-args {"song":"歌曲名称"}` |
 
 ## 示例
 
@@ -229,20 +290,29 @@ WeatherPlugin.metadata = {
     priority: 10,
     permission_level: 1,
     adapters: ['qq', 'web'],
-    lifecycle_mode: 'persistent',
-    tool: {
-        enabled: true,
-        usage: '查询指定城市的天气信息',
-        when_to_use: '当用户询问天气、气温、是否下雨等问题时',
-        parameters: [
-            { name: 'city', type: 'string', description: '城市名称', required: true },
-            { name: 'days', type: 'number', description: '预报天数', required: false, default: 1 }
-        ]
+    is_service: true,
+    ai: {
+        tool: {
+            parameters: [
+                { name: 'city', type: 'string', description: '城市名称', required: true },
+                { name: 'days', type: 'number', description: '预报天数', required: false, default: 1 }
+            ],
+            usage: '查询指定城市的天气信息',
+            when_to_use: '当用户询问天气、气温、是否下雨等问题时'
+        },
+        inject: {
+            usage: '查询天气信息',
+            format: '/weather {city}',
+            args: { city: '城市名称' }
+        }
     },
-    ai_triggerable: true,
-    ai_trigger_usage: '查询天气信息',
-    ai_trigger_format: '/weather {city}',
-    ai_trigger_args: { city: '城市名称' }
+    config_schema: {
+        api_key: {
+            type: 'string',
+            label: 'API Key',
+            required: true
+        }
+    }
 };
 
 module.exports = WeatherPlugin;
