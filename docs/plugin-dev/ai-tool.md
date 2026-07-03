@@ -42,17 +42,19 @@ metadata = {
 
 ### tool 字段说明
 
-| 字段 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `parameters` | Parameter[] | 是 | 参数定义列表 |
-| `usage` | string | 是 | 工具功能描述（给 LLM 看） |
-| `when_to_use` | string | 是 | AI 判断何时使用的场景描述 |
-| `continue` | boolean | 否 | 工具调用后是否继续对话（默认 false） |
-| `chainable` | boolean | 否 | 是否可链式调用（默认 false） |
-| `max_calls` | number | 否 | 单次对话最大调用次数（0=不限） |
-| `confirm` | boolean | 否 | 是否需要用户确认后执行（默认 false） |
-| `cooldown` | number | 否 | 冷却时间（秒） |
-| `timeout` | number | 否 | 超时时间（秒） |
+| 字段 | 类型 | 必填 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| `parameters` | Parameter[] | 是 | `[]` | 参数定义列表 |
+| `usage` | string | 是 | `""` | 工具功能描述（给 LLM 看） |
+| `when_to_use` | string | 是 | `""` | AI 判断何时使用的场景描述 |
+| `continue` | boolean | 否 | `false` | 工具调用后是否继续对话 |
+| `chainable` | boolean | 否 | `true` | 是否可链式调用（设为 `false` 表示调用后立即终止 agentic loop） |
+| `max_calls` | number | 否 | `0` | 单次对话最大调用次数（0=不限） |
+| `confirm` | boolean | 否 | `false` | 是否需要用户确认后执行 |
+| `cooldown` | number | 否 | `0` | 冷却时间（秒），用户级生效 |
+| `timeout` | number | 否 | `0` | 超时时间（秒） |
+
+> `chainable` 在 Go 端为 `*bool` 指针类型：不填或 `true` 表示可链式（默认），显式设为 `false` 才会终止 loop。
 
 ### Parameter 定义
 
@@ -386,9 +388,11 @@ WeatherPlugin.metadata = {
 }
 ```
 
-## 注释语法
+## 注释语法（仅适用于注入模式）
 
-在插件文件头部使用注释声明 AI 工具配置：
+注释语法只支持**注入调用模式**（`ai.inject`），无法声明 `ai.tool` 配置。如果需要使用直接调用模式，必须在 metadata 中显式声明 `ai.tool` 对象。
+
+在插件文件头部使用注释声明 inject 配置：
 
 ```javascript
 // Node.js
@@ -407,6 +411,15 @@ WeatherPlugin.metadata = {
 @ai-trigger-args {"city":"城市名称"}
 """
 ```
+
+| 注解 | 对应字段 | 示例 |
+|------|---------|------|
+| `@ai-triggerable` | `ai.inject`（标记启用注入模式） | `@ai-triggerable true` |
+| `@ai-trigger-usage` | `ai.inject.usage` | `@ai-trigger-usage 查询天气信息` |
+| `@ai-trigger-format` | `ai.inject.format` | `@ai-trigger-format /weather {city}` |
+| `@ai-trigger-args` | `ai.inject.args` | `@ai-trigger-args {"city":"城市名称"}` |
+
+> 注：`@ai-triggerable true` 仅声明 inject 模式可用。如需同时启用 tool 模式，必须在 metadata 中显式声明 `ai.tool` 对象。
 
 ## 最佳实践
 
