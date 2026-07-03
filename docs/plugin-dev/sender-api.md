@@ -269,7 +269,7 @@ await sender.listen({
 |------|---------|--------|------|
 | 延长超时 | `await reportActivity(minutes?)` | `report_activity(minutes=5)` | minutes 范围 1-10，默认 5 |
 
-> 完整 Sender API 详见 [Node.js 插件开发文档](/nodejs) 和 [Python 插件开发文档](/python)。
+> 完整 Sender API 详见插件开发文档。
 
 ### 上下文数据
 
