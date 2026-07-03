@@ -113,11 +113,11 @@ ai: {
         ],
         usage: '查询天气',                        // 使用说明（给 LLM 看）
         when_to_use: '用户询问天气时使用',         // 何时调用（给 LLM 看）
-        continue: false,                          // 工具调用后是否继续对话
-        chainable: false,                         // 是否可链式调用
+        continue: false,                          // 工具调用后是否继续对话（默认 false）
+        chainable: true,                          // 是否可链式调用（默认 true，设为 false 终止 loop）
         max_calls: 0,                             // 单次对话最大调用次数（0=不限）
         confirm: false,                           // 是否需要用户确认后执行
-        cooldown: 0,                              // 冷却时间（秒）
+        cooldown: 0,                              // 冷却时间（秒），用户级生效
         timeout: 0                                // 超时时间（秒）
     },
 
@@ -271,10 +271,12 @@ config_schema = {
 | `@rule` | triggers (type:2) | `@rule ^\\d+$` |
 | `@segment` | triggers (type:3) | `@segment image` |
 | `@subscribe` | subscribe | `@subscribe adapter.connected,config.changed` |
-| `@ai-triggerable` | ai.inject | `@ai-triggerable true` |
+| `@ai-triggerable` | ai.inject（标记启用注入模式） | `@ai-triggerable true` |
 | `@ai-trigger-usage` | ai.inject.usage | `@ai-trigger-usage qq点歌 七里香` |
 | `@ai-trigger-format` | ai.inject.format | `@ai-trigger-format {platform}点歌 {song}` |
 | `@ai-trigger-args` | ai.inject.args | `@ai-trigger-args {"song":"歌曲名称"}` |
+
+> 注释语法只支持 `ai.inject`（注入模式），不支持声明 `ai.tool`（直接调用模式）。如需启用 tool 模式，必须在 metadata 中显式声明 `ai.tool` 对象。
 
 ## 示例
 
