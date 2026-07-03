@@ -28,7 +28,7 @@
 | `keyword` | string \| string[] | 否 | - | 关键词触发简写，等价 `triggers: [{ type: 1, pattern }]` |
 | `regex` | string \| string[] | 否 | - | 正则触发简写，等价 `triggers: [{ type: 2, pattern }]` |
 | `triggers` | Trigger[] | 否 | `[]` | 完整触发器列表（高级场景，如段触发） |
-| `event_types` | string[] | 否 | `["message"]` | 订阅的事件类型：`"message"` / `"notice"` / `"meta"`。有触发器时自动设为 `["message"]` |
+| `adapter_events` | string[] | 否 | `["message"]` | 订阅的适配器事件类型（六类）：`"meta"` / `"message"` / `"notice"` / `"request"` / `"interaction"` / `"raw"`。**默认值规则**：存在消息类触发器（command/keyword/regex/segment）时自动设为 `["message"]`；仅含事件触发器（`@event`，type=4）时不填，由 Go 端走兜底分支匹配非消息事件 |
 | `subscribe` | string[] | 否 | `[]` | 订阅的框架内部事件列表。声明后，`onEvent(event)` 会在对应事件触发时被调用 |
 
 > **简写示例**：`command: '/hello'` 等价于 `triggers: [{ type: 0, pattern: '/hello' }]`，`keyword: ['天气', 'weather']` 等价于两个 type:1 触发器。简写和 `triggers` 可以同时使用，SDK 会自动合并。
@@ -121,7 +121,7 @@ ai: {
         timeout: 0                                // 超时时间（秒）
     },
 
-    // 注入模式：AI 通过全局 inject 工具注入命令，触发 handleMessage
+    // 注入模式：AI 通过全局 inject 工具注入命令，触发 handleEvent
     inject: {
         usage: 'qq点歌 七里香',                    // 使用示例（给 LLM 看）
         format: '{platform}点歌 {song}',           // 命令格式模板
@@ -289,7 +289,7 @@ module.exports = {
         description: '回声插件',
         triggers: [{ type: 0, pattern: '/echo' }]
     },
-    async handleMessage(sender) {
+    async handleEvent(sender) {
         await sender.reply(sender.getMessage());
     }
 };
@@ -304,7 +304,7 @@ metadata = {
     "triggers": [{"type": 0, "pattern": "/echo"}]
 }
 
-def handle_message(sender):
+def handle_event(sender):
     sender.reply(sender.get_message())
 ```
 
@@ -313,7 +313,7 @@ def handle_message(sender):
 ```javascript
 // Node.js
 class WeatherPlugin extends Plugin {
-    async handleMessage(sender) {
+    async handleEvent(sender) {
         const city = await sender.param(0);
         await sender.reply(`${city}今天晴，25°C`);
     }
@@ -335,7 +335,7 @@ WeatherPlugin.metadata = {
         { type: 0, pattern: '/weather' },
         { type: 1, pattern: '天气' }
     ],
-    event_types: ['message'],
+    adapter_events: ['message'],
     priority: 10,
     permission_level: 1,
     adapters: ['qq', 'web'],
@@ -370,7 +370,7 @@ module.exports = WeatherPlugin;
 ```python
 # Python
 class WeatherPlugin(Plugin):
-    def handle_message(self, sender):
+    def handle_event(self, sender):
         city = sender.param(0)
         sender.reply(f"{city}今天晴，25°C")
 
@@ -390,7 +390,7 @@ WeatherPlugin.metadata = {
         {"type": 0, "pattern": "/weather"},
         {"type": 1, "pattern": "天气"}
     ],
-    "event_types": ["message"],
+    "adapter_events": ["message"],
     "priority": 10,
     "permission_level": 1,
     "adapters": ["qq", "web"],
