@@ -26,7 +26,7 @@ QQAdapter.metadata = {
     description: 'QQ 适配器',
     platform: 'qq',                    // 必填：平台标识
     is_service: true,                  // 适配器是服务插件
-    event_types: ['message', 'notice', 'meta']
+    adapter_events: ['message', 'notice', 'meta']
 };
 
 module.exports = QQAdapter;
@@ -35,17 +35,18 @@ module.exports = QQAdapter;
 ```python
 # Python
 class QQAdapter(Adapter):
-    pass
-
-QQAdapter.metadata = {
-    "name": "qq-adapter",
-    "version": "1.0.0",
-    "description": "QQ 适配器",
-    "platform": "qq",                  # 必填：平台标识
-    "is_service": True,                # 适配器是服务插件
-    "event_types": ["message", "notice", "meta"]
-}
+    def __init__(self, metadata=None):
+        super().__init__(metadata or {
+            "name": "qq-adapter",
+            "version": "1.0.0",
+            "description": "QQ 适配器",
+            "platform": "qq",
+            "is_service": True,
+            "adapter_events": ["message", "notice", "meta"]
+        })
 ```
+
+> **重要**：`__init__` 必须接受 `metadata` 参数（可选），runtime 创建实例时会传入 metadata。
 
 ### 必要字段
 
@@ -53,7 +54,7 @@ QQAdapter.metadata = {
 |------|-----|------|
 | `platform` | 平台标识字符串 | 如 `'qq'`、`'web'`、`'xiaozhi'` |
 | `is_service` | `true` / `True` | 标记为服务插件，启动时调用 onStart |
-| `event_types` | `['message', 'notice', 'meta']` | 订阅所有事件类型 |
+| `adapter_events` | `['message', 'notice', 'meta']` | 订阅所有事件类型 |
 
 ## 核心方法
 
@@ -82,6 +83,15 @@ class QQAdapter extends Adapter {
 ```python
 # Python
 class QQAdapter(Adapter):
+    def __init__(self, metadata=None):
+        super().__init__(metadata or {
+            "name": "qq-adapter",
+            "version": "1.0.0",
+            "platform": "qq",
+            "is_service": True,
+            "adapter_events": ["message", "notice", "meta"]
+        })
+
     def on_start(self):
         self.client = self.connect()
 
@@ -167,6 +177,16 @@ class WebAdapter extends Adapter {
 ```python
 # Python
 class WebAdapter(Adapter):
+    def __init__(self, metadata=None):
+        super().__init__(metadata or {
+            "name": "web-adapter",
+            "version": "1.0.0",
+            "description": "Web 适配器",
+            "platform": "web",
+            "is_service": True,
+            "adapter_events": ["message", "notice", "meta"]
+        })
+
     def on_start(self):
         def webhook_handler(req):
             body = req["body"]
@@ -217,6 +237,14 @@ class WSAdapter extends Adapter {
 ```python
 # Python
 class WSAdapter(Adapter):
+    def __init__(self, metadata=None):
+        super().__init__(metadata or {
+            "name": "ws-adapter",
+            "platform": "websocket",
+            "is_service": True,
+            "adapter_events": ["message"]
+        })
+
     def on_start(self):
         self.connections = {}
         self.register_websocket("/ws/chat", {
@@ -233,6 +261,9 @@ class WSAdapter(Adapter):
             "message": data,
         })
         return "response"
+
+    def send(self, message):
+        return f"msg_{int(time.time() * 1000)}"
 ```
 
 | 方法 | Node.js | Python | 说明 |
@@ -422,7 +453,7 @@ WebAdapter.metadata = {
     description: 'Web 适配器',
     platform: 'web',
     is_service: true,
-    event_types: ['message', 'notice', 'meta']
+    adapter_events: ['message', 'notice', 'meta']
 };
 
 module.exports = WebAdapter;
@@ -432,6 +463,16 @@ module.exports = WebAdapter;
 
 ```python
 class WebAdapter(Adapter):
+    def __init__(self, metadata=None):
+        super().__init__(metadata or {
+            "name": "web-adapter",
+            "version": "1.0.0",
+            "description": "Web 适配器",
+            "platform": "web",
+            "is_service": True,
+            "adapter_events": ["message", "notice", "meta"]
+        })
+
     def on_start(self):
         LinkZone.logger.info("web-adapter", "Web 适配器启动")
         self.connections = {}
@@ -519,7 +560,7 @@ WebAdapter.metadata = {
     "description": "Web 适配器",
     "platform": "web",
     "is_service": True,
-    "event_types": ["message", "notice", "meta"]
+    "adapter_events": ["message", "notice", "meta"]
 }
 ```
 
