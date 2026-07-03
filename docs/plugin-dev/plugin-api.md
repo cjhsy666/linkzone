@@ -9,13 +9,13 @@ Plugin 是插件基类，提供了生命周期钩子、数据库访问、定时�
 | 钩子 | Node.js | Python | 说明 |
 |------|---------|--------|------|
 | 启动 | `onStart()` | `on_start()` | 插件实例化后调用，用于初始化 |
-| 消息处理 | `handleMessage(sender)` | `handle_message(sender)` | 收到匹配消息时调用 |
+| 消息处理 | `handleEvent(sender)` | `handle_event(sender)` | 收到匹配消息时调用 |
 | 框架事件 | `onEvent(event)` | `on_event(event)` | 收到框架内部事件时调用（需在 metadata.subscribe 中声明） |
 | 定时任务 | `onCron()` | `on_cron()` | Cron 表达式触发时调用 |
 | AI 工具执行 | `executeTool(sender, args)` | `execute_tool(sender, args)` | AI 调用工具时执行 |
 | 停止 | `onStop()` | `on_stop()` | 插件卸载前调用，用于清理资源 |
 
-> **工具库模式**的插件 runtime 不会创建实例，因此 `onStart`、`handleMessage` 等钩子**不会被调用**。
+> **工具库模式**的插件 runtime 不会创建实例，因此 `onStart`、`handleEvent` 等钩子**不会被调用**。
 
 ## 插件定义方式
 
@@ -29,7 +29,7 @@ module.exports = {
         description: '回声插件',
         triggers: [{ type: 0, pattern: '/echo' }]
     },
-    async handleMessage(sender) {
+    async handleEvent(sender) {
         await sender.reply(sender.getMessage());
     }
 };
@@ -39,7 +39,7 @@ module.exports = {
 
 ```javascript
 class HelloPlugin extends Plugin {
-    async handleMessage(sender) {
+    async handleEvent(sender) {
         await sender.reply(`你好，${sender.getSenderName()}！`);
     }
 }
@@ -49,20 +49,22 @@ HelloPlugin.metadata = {
     version: '1.0.0',
     description: '问候插件',
     triggers: [{ type: 0, pattern: '/hello' }],
-    event_types: ['message']
+    adapter_events: ['message']
 };
 
 module.exports = HelloPlugin;
 ```
 
-> **重要**：类式插件必须使用**静态属性** `MyPlugin.metadata = {...}` 定义元信息，而不是通过 `super({...})` 传递。runtime 只读取静态 metadata 属性。
+> **Node.js 注意**：类式插件必须使用**静态属性** `MyPlugin.metadata = {...}` 定义元信息，runtime 在创建实例之前读取。不要写 `super({ name: 'xxx', ... })`，runtime 不会读取 constructor 内的 metadata。
+>
+> **Python 注意**：Python 类式插件通过 `super().__init__({...})` 传入 metadata，两种方式均可：构造函数传入或模块级 `metadata = {...}` 字典。推荐使用构造函数方式。
 
 ### Python - 函数式
 
 ```python
 # SDK 对象由 runtime 自动注入，无需 import
 
-def handle_message(sender):
+def handle_event(sender):
     sender.reply(sender.get_message())
 
 metadata = {
@@ -79,7 +81,7 @@ metadata = {
 # SDK 对象由 runtime 自动注入，无需 import
 
 class HelloPlugin(Plugin):
-    def handle_message(self, sender):
+    def handle_event(self, sender):
         sender.reply(f"你好，{sender.get_sender_name()}！")
 
 HelloPlugin.metadata = {
@@ -87,7 +89,7 @@ HelloPlugin.metadata = {
     "version": "1.0.0",
     "description": "问候插件",
     "triggers": [{"type": 0, "pattern": "/hello"}],
-    "event_types": ["message"]
+    "adapter_events": ["message"]
 }
 ```
 
@@ -217,35 +219,21 @@ def daily_report(self):
 
 ```javascript
 // Node.js
-LinkZone.logger.debug('module', '调试信息');
 LinkZone.logger.info('module', '普通信息');
-LinkZone.logger.warn('module', '警告信息');
 LinkZone.logger.error('module', '错误信息');
-LinkZone.logger.fatal('module', '致命错误');
-
 // 只传一个参数时，module 默认为当前插件名
 LinkZone.logger.info('这条日志的 module 自动为当前插件名');
 ```
 
 ```python
 # Python
-LinkZone.logger.debug("module", "调试信息")
 LinkZone.logger.info("module", "普通信息")
-LinkZone.logger.warn("module", "警告信息")
 LinkZone.logger.error("module", "错误信息")
-LinkZone.logger.fatal("module", "致命错误")
-
 # 只传一个参数时，module 默认为当前插件名
 LinkZone.logger.info("这条日志的 module 自动为当前插件名")
 ```
 
-日志级别控制：
-
-```javascript
-await LinkZone.logger.setLevel('debug')          // 全局
-await LinkZone.logger.setLevel('debug', 'module') // 指定模块
-const level = await LinkZone.logger.getLevel()    // 获取当前级别
-```
+> 完整日志 API（快捷方法、结构化日志、条件日志、计时器、子日志等）详见 [Node.js 插件开发文档](/nodejs) 和 [Python 插件开发文档](/python)。
 
 ### 方式二：组件私有存储
 
@@ -309,7 +297,7 @@ LinkZone.inject({
 插件可通过 `sender.getConfig()` 获取用户在管理后台配置的值：
 
 ```javascript
-async handleMessage(sender) {
+async handleEvent(sender) {
     const config = await sender.getConfig();
     const apiKey = config.api_key;
     const maxRetries = config.max_retries || 3;
@@ -317,7 +305,7 @@ async handleMessage(sender) {
 ```
 
 ```python
-def handle_message(self, sender):
+def handle_event(self, sender):
     config = sender.get_config()
     api_key = config.get("api_key")
     max_retries = config.get("max_retries", 3)
@@ -671,7 +659,7 @@ LinkZone.qinglong.log.delete("old.log", "/ql/data/log")
 插件中的未捕获异常会被 SDK 自动捕获并记录日志，不会导致 runtime 崩溃：
 
 ```javascript
-async handleMessage(sender) {
+async handleEvent(sender) {
     try {
         const result = await riskyOperation();
         await sender.reply(result);
@@ -691,7 +679,7 @@ class WeatherPlugin extends Plugin {
         this.cache = {};
     }
 
-    async handleMessage(sender) {
+    async handleEvent(sender) {
         const city = await sender.param(0);
         if (!city) {
             await sender.reply('请输入城市名，如：/weather 北京');
