@@ -4,28 +4,21 @@
 
 ## 工具调用方式
 
-AI 工具插件有两种调用方式：
+AI 工具插件有两种调用方式，均通过插件元信息（metadata）的 `ai` 字段配置：
 
-### 1. 注入调用
+### 1. 注入调用（inject）
 
-插件设置 `ai_triggerable: true`，AI 通过 inject 工具将命令注入到消息流中触发插件。
-
-```
-用户消息 → AI 判断需要调用 → inject 注入命令 → 插件通过 handleEvent 处理 → 返回结果
-```
+插件在 metadata 中配置 `ai.inject` 对象，AI 通过全局 inject 工具将命令注入到消息流中触发插件。
 
 特点：
-- 插件复用已有的 `handleEvent` 逻辑
-- AI 通过 `ai_trigger_format` 知道命令格式
+- 插件复用已有的 `handleEvent` 逻辑，无需新增方法
+- AI 根据 `ai.inject.format` 构造命令字符串
+- 走完整消息管道，经过权限检查，其他插件可联动
 - 适合已有命令式插件快速接入 AI
 
-### 2. 直接调用
+### 2. 直接调用（tool）
 
-插件配置 `tool` 字段并提供 `executeTool` 方法，AI 通过 Function Calling 直接调用。
-
-```
-用户消息 → AI 判断需要调用 → Function Calling → executeTool(ctx, args) → 返回结构化结果
-```
+插件在 metadata 中配置 `ai.tool` 对象并提供 `executeTool` 方法，AI 通过 Function Calling 直接调用。
 
 特点：
 - AI 直接传入结构化参数，无需拼接命令
@@ -35,14 +28,17 @@ AI 工具插件有两种调用方式：
 
 ### 对比
 
-| | 注入调用 | 直接调用 |
+| | 注入调用（inject） | 直接调用（tool） |
 |--|---------|---------|
-| 配置字段 | `ai_triggerable: true` | `tool: { enabled: true, ... }` |
+| 配置字段 | `ai.inject` | `ai.tool` |
 | 入口方法 | `handleEvent` | `executeTool` |
-| 参数传递 | 命令文本 | 结构化 JSON |
-| 返回结果 | 插件自行回复 | `ToolResult` 对象 |
+| 参数传递 | 命令文本（AI 按 `format` 拼接） | 结构化 JSON |
+| 返回结果 | 插件通过 `sender.reply()` 自行回复 | `ToolResult` 对象 |
 | 链式调用 | 不支持 | 支持 |
+| 消息管道 | 经过（含权限检查、其他插件联动） | 不经过 |
 | 适用场景 | 已有命令插件快速接入 | 为 AI 专门设计的工具 |
+
+> 两种模式可并存：同时声明 `ai.tool` 和 `ai.inject` 即可。详见 [AI 工具插件](/plugin-dev/ai-tool)。
 
 ## 工具来源
 
@@ -69,7 +65,7 @@ AI 工具插件有两种调用方式：
 }
 ```
 
-## 配置
+## 智能体工具配置
 
 在管理后台 → 智能体管理中，编辑智能体的工具配置：
 
@@ -77,16 +73,20 @@ AI 工具插件有两种调用方式：
 - **allowed_plugins**：限制可用的插件工具列表
 - **mcp_servers**：MCP 服务器列表
 
-## 工具属性
+## 工具属性（`ai.tool`）
 
-| 属性 | 说明 |
-|------|------|
-| `enabled` | 是否启用 |
-| `usage` | 工具用途描述 |
-| `when_to_use` | 何时使用此工具 |
-| `parameters` | 参数定义 |
-| `max_calls` | 单次对话最大调用次数 |
-| `confirm` | 是否需要用户确认 |
-| `cooldown` | 冷却时间（秒） |
-| `timeout` | 超时时间（秒） |
-| `chainable` | 是否可链式调用 |
+`ai.tool` 对象的字段：
+
+| 属性 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `parameters` | Parameter[] | `[]` | 参数定义列表 |
+| `usage` | string | `""` | 工具用途描述（给 LLM 看） |
+| `when_to_use` | string | `""` | 何时使用此工具（给 LLM 看） |
+| `continue` | boolean | `false` | 工具调用后是否继续对话 |
+| `chainable` | boolean | `true` | 是否可链式调用（false 表示调用后立即终止 loop） |
+| `max_calls` | number | `0` | 单次对话最大调用次数（0=不限） |
+| `confirm` | boolean | `false` | 是否需要用户确认后执行 |
+| `cooldown` | number | `0` | 冷却时间（秒），用户级生效 |
+| `timeout` | number | `0` | 超时时间（秒） |
+
+> 工具名称和描述自动使用插件的 `name` 和 `description`，无需在 `ai.tool` 中重复指定。完整字段说明详见 [元信息定义](/plugin-dev/metadata#ai-配置)。
