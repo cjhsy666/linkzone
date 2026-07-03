@@ -60,7 +60,7 @@ linkzone-user-windows-amd64.exe
 
 通过 systemd 管理进程，适合生产环境：
 
-```ini
+```systemd
 # /etc/systemd/system/linkzone.service
 [Unit]
 Description=LinkZone Bot Framework
@@ -86,21 +86,47 @@ sudo systemctl status linkzone
 
 ### Docker 部署
 
-```dockerfile
-FROM alpine:latest
-RUN apk add --no-cache nodejs python3
-WORKDIR /app
-COPY linkzone-user .
-COPY data/ ./data/
-RUN chmod +x linkzone-user
-EXPOSE 8080
-CMD ["./linkzone-user"]
-```
+#### 方式一：docker run（推荐）
 
 ```bash
-docker build -t linkzone .
-docker run -d -p 8080:8080 -v /path/to/data:/app/data linkzone
+docker run -d \
+  --name linkzone \
+  --restart unless-stopped \
+  -p 8080:8080 \
+  -v /root/Linkzone:/app/Linkzone \
+  -v /etc/machine-id:/etc/machine-id:ro \
+  -e TZ=Asia/Shanghai \
+  crpi-y4y1rse5movp8mob.cn-hangzhou.personal.cr.aliyuncs.com/linkzone/linkzone:latest
 ```
+
+#### 方式二：docker-compose
+
+创建 `docker-compose.yml`：
+
+```yaml
+services:
+  linkzone:
+    image: crpi-y4y1rse5movp8mob.cn-hangzhou.personal.cr.aliyuncs.com/linkzone/linkzone:latest
+    container_name: linkzone
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - /root/Linkzone:/app/Linkzone
+      - /etc/machine-id:/etc/machine-id:ro
+    environment:
+      - TZ=Asia/Shanghai
+```
+
+启动：
+
+```bash
+docker compose up -d
+```
+
+访问：`http://<服务器IP>:8080`
+
+> `/etc/machine-id` 是宿主机标识，用于授权验证，请勿删除。
 
 ## 目录结构
 
