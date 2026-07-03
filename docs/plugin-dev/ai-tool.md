@@ -225,17 +225,17 @@ args: {
 
 ```
 用户消息 → AI 分析 → 判断需要调用工具 → 生成命令字符串
-→ 注入到消息流 → 匹配触发器 → 调用插件 handleMessage
+→ 注入到消息流 → 匹配触发器 → 调用插件 handleEvent
 ```
 
-AI 会根据 `usage` 判断是否需要调用此工具，然后按照 `format` 格式生成命令字符串，框架将其作为普通消息处理，匹配到对应触发器后调用插件的 `handleMessage`。
+AI 会根据 `usage` 判断是否需要调用此工具，然后按照 `format` 格式生成命令字符串，框架将其作为普通消息处理，匹配到对应触发器后调用插件的 `handleEvent`。
 
 ### 示例
 
 ```javascript
 // Node.js
 class TranslatePlugin extends Plugin {
-    async handleMessage(sender) {
+    async handleEvent(sender) {
         const text = await sender.param(0);
         const targetLang = await sender.param(1) || 'en';
         // 翻译逻辑...
@@ -264,7 +264,7 @@ module.exports = TranslatePlugin;
 ```python
 # Python
 class TranslatePlugin(Plugin):
-    def handle_message(self, sender):
+    def handle_event(self, sender):
         text = sender.param(0)
         target_lang = sender.param(1) or "en"
         # 翻译逻辑...
@@ -291,7 +291,7 @@ TranslatePlugin.metadata = {
 | 特性 | 直接调用 (tool) | 注入调用 (inject) |
 |------|----------------|------------------|
 | 配置字段 | `ai.tool` | `ai.inject` |
-| 处理钩子 | `executeTool` / `execute_tool` | `handleMessage` / `handle_message` |
+| 处理钩子 | `executeTool` / `execute_tool` | `handleEvent` / `handle_event` |
 | 调用方式 | AI 直接调用 → 返回值 | AI 生成命令 → 消息流 |
 | 返回值 | 通过 `return` | 通过 `sender.reply()` |
 | 适用场景 | 需要返回数据给 AI | 需要发送消息给用户 |
@@ -306,7 +306,7 @@ TranslatePlugin.metadata = {
 // Node.js
 class WeatherPlugin extends Plugin {
     // 注入调用：用户直接使用 /weather 命令
-    async handleMessage(sender) {
+    async handleEvent(sender) {
         const city = await sender.param(0);
         const data = await this.fetchWeather(city);
         await sender.reply(this.formatWeather(data));
@@ -350,7 +350,7 @@ module.exports = WeatherPlugin;
 # Python
 class WeatherPlugin(Plugin):
     # 注入调用：用户直接使用 /weather 命令
-    def handle_message(self, sender):
+    def handle_event(self, sender):
         city = sender.param(0)
         data = self.fetch_weather(city)
         sender.reply(self.format_weather(data))
