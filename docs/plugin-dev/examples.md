@@ -12,7 +12,7 @@ module.exports = {
         description: '回声插件',
         triggers: [{ type: 0, pattern: '/echo' }]
     },
-    async handleMessage(sender) {
+    async handleEvent(sender) {
         const text = sender.getMessage().replace('/echo', '').trim();
         await sender.reply(text || '请输入内容');
     }
@@ -23,7 +23,7 @@ module.exports = {
 
 ```javascript
 class HelloPlugin extends Plugin {
-    async handleMessage(sender) {
+    async handleEvent(sender) {
         const name = sender.getSenderName();
         const isGroup = sender.isGroup();
 
@@ -43,7 +43,7 @@ HelloPlugin.metadata = {
     version: '1.0.0',
     description: '问候插件',
     triggers: [{ type: 0, pattern: '/hello' }],
-    event_types: ['message']
+    adapter_events: ['message']
 };
 
 module.exports = HelloPlugin;
@@ -63,7 +63,7 @@ module.exports = {
             { type: 1, pattern: '生气' }
         ]
     },
-    async handleMessage(sender) {
+    async handleEvent(sender) {
         const msg = sender.getMessage();
         if (msg.includes('开心')) {
             await sender.reply('太好了！保持好心情');
@@ -86,7 +86,7 @@ module.exports = {
         description: '掷骰子',
         triggers: [{ type: 2, pattern: '^r(\\d+)?d(\\d+)$' }]
     },
-    async handleMessage(sender) {
+    async handleEvent(sender) {
         const count = parseInt(await sender.param(0)) || 1;
         const sides = parseInt(await sender.param(1)) || 6;
 
@@ -107,7 +107,7 @@ module.exports = {
 
 ```javascript
 class GuessNumberPlugin extends Plugin {
-    async handleMessage(sender) {
+    async handleEvent(sender) {
         const target = Math.floor(Math.random() * 100) + 1;
         await sender.reply('我想了一个 1-100 的数字，猜猜看！');
 
@@ -188,7 +188,7 @@ module.exports = MorningPlugin;
 
 ```javascript
 class CounterPlugin extends Plugin {
-    async handleMessage(sender) {
+    async handleEvent(sender) {
         const userId = sender.getSenderId();
         const key = `count_${userId}`;
 
@@ -255,7 +255,7 @@ module.exports = CalculatorPlugin;
 
 ```javascript
 class TranslatePlugin extends Plugin {
-    async handleMessage(sender) {
+    async handleEvent(sender) {
         const text = await sender.param(0);
         const targetLang = await sender.param(1) || 'en';
 
@@ -304,7 +304,7 @@ module.exports = TranslatePlugin;
 
 ```javascript
 class AdminBanPlugin extends Plugin {
-    async handleMessage(sender) {
+    async handleEvent(sender) {
         if (!sender.isAdmin()) {
             await sender.reply('仅管理员可使用此命令');
             return;
@@ -376,7 +376,7 @@ metadata = {
     "triggers": [{"type": 0, "pattern": "/echo"}]
 }
 
-def handle_message(sender):
+def handle_event(sender):
     text = sender.get_message().replace("/echo", "").strip()
     sender.reply(text or "请输入内容")
 ```
@@ -385,7 +385,7 @@ def handle_message(sender):
 
 ```python
 class HelloPlugin(Plugin):
-    def handle_message(self, sender):
+    def handle_event(self, sender):
         name = sender.get_sender_name()
         sender.reply(f"你好，{name}！")
 
@@ -394,14 +394,14 @@ HelloPlugin.metadata = {
     "version": "1.0.0",
     "description": "Python 问候插件",
     "triggers": [{"type": 0, "pattern": "/hello"}],
-    "event_types": ["message"]
+    "adapter_events": ["message"]
 }
 ```
 
 ## 14. Python 示例 - 流程控制
 
 ```python
-def handle_message(sender):
+def handle_event(sender):
     msg = sender.get_message()
 
     if "禁止词" in msg:
@@ -446,7 +446,7 @@ MonitorPlugin.metadata = {
 
 ```python
 class UserPlugin(Plugin):
-    def handle_message(self, sender):
+    def handle_event(self, sender):
         user_id = sender.get_sender_id()
         db = LZDB("users")
 
