@@ -32,6 +32,8 @@ Sender 是消息上下文对象，在插件处理消息时传入，提供了消�
 | 方法 | Node.js | Python | 说明 |
 |------|---------|--------|------|
 | 获取消息文本 | `getMessage()` | `get_message()` | 获取原始消息文本 |
+| 获取事件类型 | `getType()` | `get_type()` | 获取事件类型（message/notice/request 等） |
+| 获取子事件类型 | `getSubEvent()` | `get_sub_event()` | 获取子事件类型（group_increase/friend 等） |
 | 获取发送者 ID | `getSenderId()` | `get_sender_id()` | 获取发送者唯一标识 |
 | 获取发送者名称 | `getSenderName()` | `get_sender_name()` | 获取发送者昵称 |
 | 获取平台 | `getPlatform()` | `get_platform()` | 获取来源平台 |
@@ -42,6 +44,7 @@ Sender 是消息上下文对象，在插件处理消息时传入，提供了消�
 | 获取接收者 ID | `getReceiverId()` | `get_receiver_id()` | 获取接收者标识 |
 | 获取 LinkZone ID | `getLinkZoneID()` | `get_linkzone_id()` | 获取用户全局 ID（同步） |
 | 获取用户信息 | `await getUserInfo()` | `get_user_info()` | 获取用户详细信息（异步 RPC 调用） |
+| 获取完整事件 | `await getEvent()` | `get_event()` | 获取完整事件对象 |
 
 ### getUserInfo 返回值
 
@@ -258,6 +261,16 @@ await sender.listen({
 | 解除禁言 | `await unban(userId?)` | `unban(user_id?)` | 解除用户禁言 |
 | 执行动作 | `await doAction(action, params?)` | `do_action(action, params?)` | 执行平台特定动作 |
 
+### 活动感知心跳（长任务续约）
+
+长时间运行的任务（AI 推理、批量处理等）可调用 `reportActivity` 延长 Context 超时：
+
+| 方法 | Node.js | Python | 说明 |
+|------|---------|--------|------|
+| 延长超时 | `await reportActivity(minutes?)` | `report_activity(minutes=5)` | minutes 范围 1-10，默认 5 |
+
+> 完整 Sender API 详见 [Node.js 插件开发文档](/nodejs) 和 [Python 插件开发文档](/python)。
+
 ### 上下文数据
 
 | 方法 | Node.js | Python | 说明 |
@@ -271,7 +284,7 @@ await sender.listen({
 ### 基础回复
 
 ```javascript
-async handleMessage(sender) {
+async handleEvent(sender) {
     await sender.reply('收到！');
 }
 ```
@@ -280,7 +293,7 @@ async handleMessage(sender) {
 
 ```javascript
 // 触发器: /echo
-async handleMessage(sender) {
+async handleEvent(sender) {
     const text = await sender.param(0);
     const allParams = await sender.getAllParams();
     await sender.reply(text || '请输入内容');
@@ -290,7 +303,7 @@ async handleMessage(sender) {
 ### 多轮对话
 
 ```javascript
-async handleMessage(sender) {
+async handleEvent(sender) {
     await sender.reply('请问你的名字是？');
     const result = await sender.listen({ timeout: 30000 });
     if (!result.timeout && result.sender) {
@@ -303,7 +316,7 @@ async handleMessage(sender) {
 ### 获取用户信息
 
 ```javascript
-async handleMessage(sender) {
+async handleEvent(sender) {
     const lzId = sender.getLinkZoneID();
     const userInfo = await sender.getUserInfo();
     const { level } = await sender.getUserLevel();
@@ -314,7 +327,7 @@ async handleMessage(sender) {
 ### 群管理
 
 ```javascript
-async handleMessage(sender) {
+async handleEvent(sender) {
     if (!sender.isAdmin()) {
         await sender.reply('仅管理员可执行此操作');
         return;
