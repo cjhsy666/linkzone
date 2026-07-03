@@ -17,7 +17,6 @@ export default defineConfig({
       { text: '功能', link: '/features/adapter' },
       { text: '插件开发', link: '/plugin-dev/overview' },
       { text: 'AI 配置', link: '/ai/overview' },
-      { text: 'API', link: '/api/system' },
       { text: '友链', link: '/friends' }
     ],
     sidebar: {
@@ -38,7 +37,6 @@ export default defineConfig({
             { text: '适配器系统', link: '/features/adapter' },
             { text: '智能体配置', link: '/features/agent' },
             { text: '智能家居', link: '/features/smarthome' },
-            { text: '插件系统', link: '/features/plugin' },
             { text: '插件市场', link: '/features/market' },
             { text: '返利服务', link: '/features/rebate' },
             { text: '转发服务', link: '/features/forwarder' }
@@ -72,17 +70,6 @@ export default defineConfig({
             { text: '工具系统', link: '/ai/tool' },
             { text: '上下文与记忆', link: '/ai/memory' },
             { text: '多模态', link: '/ai/multimodal' }
-          ]
-        }
-      ],
-      '/api/': [
-        {
-          text: 'API 参考',
-          items: [
-            { text: '系统 API', link: '/api/system' },
-            { text: '智能体 API', link: '/api/agent' },
-            { text: '插件 API', link: '/api/plugin' },
-            { text: '用户与群组 API', link: '/api/user' }
           ]
         }
       ]
