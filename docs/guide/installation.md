@@ -4,7 +4,7 @@
 
 ### 1. 下载二进制文件
 
-从官方渠道获取对应平台的二进制包。LinkZone 基于 Go 语言开发，支持全平台：
+从官方渠道获取对应平台的二进制包：
 
 | 平台 | 架构 | 文件名 |
 |------|------|--------|
@@ -22,29 +22,18 @@ tar -xzf linkzone-user-linux-amd64.tar.gz
 cd linkzone
 ```
 
-### 2. 赋予执行权限
-
-Linux / macOS 需要赋予执行权限：
-
-```bash
-chmod +x linkzone-user
-```
-
-### 3. 首次运行
+### 2. 启动
 
 ```bash
 # Linux / macOS
+chmod +x linkzone-user
 ./linkzone-user
 
 # Windows
 linkzone-user-windows-amd64.exe
 ```
 
-首次启动时，框架会自动：
-- 创建工作目录（`data/`、`logs/`、`plugins/`、`skills/`、`public/`）
-- 初始化 BadgerDB 存储
-- 生成默认配置文件 `data/config.yaml`
-- 启用运行时后，会自动初始化 Node.js / Python 运行时生态
+首次启动会自动创建工作目录、初始化数据库和默认配置。
 
 ## 部署方式
 
@@ -56,9 +45,9 @@ linkzone-user-windows-amd64.exe
 ./linkzone-user
 ```
 
-### 守护进程
+### 守护进程（systemd）
 
-通过 systemd 管理进程，适合生产环境：
+适合生产环境：
 
 ```systemd
 # /etc/systemd/system/linkzone.service
@@ -86,7 +75,7 @@ sudo systemctl status linkzone
 
 ### Docker 部署
 
-#### 方式一：docker run（推荐）
+#### 方式一：docker run
 
 ```bash
 docker run -d \
@@ -130,14 +119,12 @@ docker compose up -d
 
 ## 目录结构
 
-运行后，LinkZone 会创建以下目录结构：
-
 ```
 linkzone/
 ├── linkzone-user          # 可执行文件
 ├── data/                  # 数据目录
 │   ├── config.yaml        # 主配置文件
-│   ├── linkzone.db        # BadgerDB 数据文件
+│   ├── linkzone.db        # 数据库文件
 │   └── runtime/           # 运行时通信文件
 ├── logs/                  # 日志目录
 ├── plugins/               # 用户插件目录
@@ -153,43 +140,18 @@ linkzone/
 | 端口 | 协议 | 说明 |
 |------|------|------|
 | 8080 | HTTP | Web 管理界面和 RESTful API |
-| - | Unix Socket | 内部进程通信（默认 `data/runtime/linkzone.sock`） |
 
-HTTP 端口和 Socket 路径均可在配置文件中修改。
-
-## 启动流程
-
-LinkZone 启动时的初始化顺序：
-
-1. **初始化工作目录** — 创建 `data/`、`logs/` 等必要目录
-2. **初始化存储** — 初始化 BadgerDB、加载配置
-3. **注册组件** — 注册适配器、内置插件等
-4. **启动服务** — 启动 HTTP 服务器、Bot 核心、运行时管理器（如已启用）
-5. **事件监听** — 监听系统信号（SIGINT/SIGTERM）
+HTTP 端口可在配置文件中修改，详见 [配置管理](/guide/configuration)。
 
 ## 重启与关闭
 
-### 正常关闭
-
-通过 CLI 命令或 Web 后台触发优雅关闭：
-
 ```bash
 # CLI
-> system shutdown
+> system shutdown    # 关闭
+> system restart     # 重启
 
-# Web 后台：系统管理 → 关闭
+# Web 后台：系统管理 → 关闭/重启
 ```
-
-### 重启
-
-```bash
-# CLI
-> system restart
-
-# Web 后台：系统管理 → 重启
-```
-
-重启时，框架会优雅关闭所有服务，然后通过 `syscall.Exec` 替换当前进程实现热重启。
 
 ## 常见问题
 
@@ -202,9 +164,9 @@ LinkZone 启动时的初始化顺序：
   value: ":9090"
 ```
 
-### 存储初始化失败
+### 目录权限问题
 
-检查 `data/` 目录的读写权限：
+确保 `data/` 目录有读写权限：
 
 ```bash
 chmod 755 data/
@@ -212,4 +174,4 @@ chmod 755 data/
 
 ### 运行时初始化失败
 
-Node.js 或 Python 运行时初始化失败不影响核心功能运行，但插件系统将不可用。确保已安装对应运行时环境。
+Node.js 或 Python 运行时初始化失败不影响核心功能运行，但插件系统将不可用。请确保已安装对应运行时环境（Node.js 16+ / Python 3.8+）。
