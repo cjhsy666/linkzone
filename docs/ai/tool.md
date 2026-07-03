@@ -11,11 +11,11 @@ AI 工具插件有两种调用方式：
 插件设置 `ai_triggerable: true`，AI 通过 inject 工具将命令注入到消息流中触发插件。
 
 ```
-用户消息 → AI 判断需要调用 → inject 注入命令 → 插件通过 handleMessage 处理 → 返回结果
+用户消息 → AI 判断需要调用 → inject 注入命令 → 插件通过 handleEvent 处理 → 返回结果
 ```
 
 特点：
-- 插件复用已有的 `handleMessage` 逻辑
+- 插件复用已有的 `handleEvent` 逻辑
 - AI 通过 `ai_trigger_format` 知道命令格式
 - 适合已有命令式插件快速接入 AI
 
@@ -38,7 +38,7 @@ AI 工具插件有两种调用方式：
 | | 注入调用 | 直接调用 |
 |--|---------|---------|
 | 配置字段 | `ai_triggerable: true` | `tool: { enabled: true, ... }` |
-| 入口方法 | `handleMessage` | `executeTool` |
+| 入口方法 | `handleEvent` | `executeTool` |
 | 参数传递 | 命令文本 | 结构化 JSON |
 | 返回结果 | 插件自行回复 | `ToolResult` 对象 |
 | 链式调用 | 不支持 | 支持 |
