@@ -1,37 +1,25 @@
 # 快速开始
 
-## 环境准备
+本页带你 5 分钟跑起 LinkZone。详细部署方式见 [安装部署](/guide/installation)。
 
-在开始之前，请确保你的系统满足以下要求：
+## 环境要求
 
-- **操作系统**：Linux / macOS / Windows（全平台支持）
-- **架构**：AMD64 / ARM64
-- **Node.js** 16+（可选，用于 Node.js 插件运行时）
-- **Python** 3.8+（可选，用于 Python 插件运行时）
+- **操作系统**：Linux / macOS / Windows
+- **Node.js** 16+（可选，运行 Node.js 插件需要）
+- **Python** 3.8+（可选，运行 Python 插件需要）
 
-## 安装
+## 1. 下载
 
-### 1. 下载
-
-从官方渠道获取 LinkZone User Edition 二进制文件，选择适合你平台的版本：
-
-| 平台 | 架构 | 文件名 |
-|------|------|--------|
-| Linux | AMD64 | `linkzone-user-linux-amd64` |
-| Linux | ARM64 | `linkzone-user-linux-arm64` |
-| macOS | AMD64 | `linkzone-user-darwin-amd64` |
-| macOS | ARM64 (Apple Silicon) | `linkzone-user-darwin-arm64` |
-| Windows | AMD64 | `linkzone-user-windows-amd64.exe` |
-| Windows | ARM64 | `linkzone-user-windows-arm64.exe` |
-
-下载后解压并进入目录：
+从官方渠道获取对应平台的二进制包，解压后进入目录：
 
 ```bash
 tar -xzf linkzone-user-linux-amd64.tar.gz
 cd linkzone
 ```
 
-### 2. 启动
+完整的平台版本列表见 [安装部署](/guide/installation#下载安装)。
+
+## 2. 启动
 
 ```bash
 # Linux / macOS
@@ -42,18 +30,15 @@ chmod +x linkzone-user
 linkzone-user-windows-amd64.exe
 ```
 
-启动后，框架会自动：
-- 初始化工作目录和存储
-- 初始化运行时生态（Node.js / Python）
-- 加载内置组件和适配器
-- 启动 HTTP 服务器（默认端口 8080）
-- 启动 CLI 交互界面
+首次启动会自动创建工作目录、初始化数据库和默认配置，无需手动干预。
 
-## 验证运行
+## 3. 验证运行
 
 ### 通过 Web 后台
 
-启动后访问 `http://localhost:8080`，打开 Web 管理后台，可以可视化管理所有功能。
+启动后访问 `http://localhost:8080`，打开 Web 管理后台，可视化管理所有功能。
+
+> 首次访问 Web 后台时，如配置了 `admin_token`，需要输入 Token 进行身份验证。
 
 ### 通过 CLI 交互
 
@@ -73,7 +58,7 @@ Available commands:
 
 ## 下一步
 
-- [安装部署](/guide/installation) — 了解更多部署方式
-- [配置管理](/guide/configuration) — 详细配置说明
-- [适配器系统](/features/adapter) — 连接各种通信渠道
+- [安装部署](/guide/installation) — systemd 守护进程、Docker 部署等
+- [配置管理](/guide/configuration) — 端口、日志、运行时等配置说明
+- [适配器系统](/features/adapter) — 连接 QQ、Web、小智等平台
 - [插件开发](/plugin-dev/overview) — 开发自己的插件
