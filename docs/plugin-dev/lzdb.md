@@ -125,7 +125,7 @@ const profile = await db.get('user_profile');
 
 ```javascript
 class CounterPlugin extends Plugin {
-    async handleMessage(sender) {
+    async handleEvent(sender) {
         const userId = sender.getSenderId();
         let count = await this.db.get('counter', userId) || 0;
         count++;
@@ -138,7 +138,7 @@ class CounterPlugin extends Plugin {
 ### 2. 缓存外部数据
 
 ```javascript
-async handleMessage(sender) {
+async handleEvent(sender) {
     const city = await sender.param(0);
     const cacheKey = `weather_${city}`;
     let data = await this.db.get('cache', cacheKey);
@@ -155,7 +155,7 @@ async handleMessage(sender) {
 ### 3. 用户数据管理
 
 ```javascript
-async handleMessage(sender) {
+async handleEvent(sender) {
     const userId = sender.getSenderId();
 
     // 设置用户数据
