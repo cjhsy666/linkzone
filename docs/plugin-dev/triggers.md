@@ -10,6 +10,7 @@
 | `1` | 关键词触发 | 消息中包含指定关键词 |
 | `2` | 正则触发 | 消息匹配正则表达式 |
 | `3` | 段匹配触发 | 消息段（CQ码/消息段）匹配 |
+| `4` | 事件触发 | 匹配非消息事件的 `sub_event`（如群成员变动、好友请求） |
 
 ## 命令触发（type: 0）
 
@@ -30,7 +31,7 @@ triggers: [
 匹配规则：
 - 消息以 `pattern` 开头即匹配
 - 支持参数：`/hello 世界` → 命令 `/hello`，参数 `世界`
-- 通过 `sender.param(0)` / `sender.param(0)` 获取参数
+- 通过 `await sender.param(0)` (Node.js) / `sender.param(0)` (Python) 获取参数
 
 ### 命令触发参数
 
@@ -101,7 +102,7 @@ triggers: [
 // Node.js
 // 触发器: { type: 2, pattern: '^抽奖\\s*(\\d+)' }
 // 消息: "抽奖 5"
-async handleMessage(sender) {
+async handleEvent(sender) {
     const count = await sender.param(0); // "5"
 }
 ```
@@ -110,7 +111,7 @@ async handleMessage(sender) {
 # Python
 # 触发器: {"type": 2, "pattern": r"^抽奖\s*(\d+)"}
 # 消息: "抽奖 5"
-def handle_message(sender):
+def handle_event(sender):
     count = sender.param(0)  # "5"
 ```
 
@@ -208,6 +209,62 @@ triggers: [{ type: 3, segment: 'image', segment_field: 'url', pattern: 'example\
 | `json` | JSON卡片 |
 | `xml` | XML卡片 |
 | `forward` | 合并转发 |
+
+## 事件触发（type: 4）
+
+匹配非消息事件（notice/request/interaction 等）的 `sub_event` 字段。用于监听群成员变动、好友请求、交互回调等。
+
+```javascript
+// Node.js
+triggers: [
+    { type: 4, pattern: 'group_increase' },        // 精确匹配
+    { type: 4, pattern: '/group_(increase|decrease)/' }, // 正则匹配
+    { type: 4, pattern: '*' }                        // 通配所有子事件
+]
+```
+
+```python
+# Python
+"triggers": [
+    {"type": 4, "pattern": "group_increase"},
+    {"type": 4, "pattern": "/group_(increase|decrease)/"},
+    {"type": 4, "pattern": "*"}
+]
+```
+
+### 事件触发参数
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `type` | number | 是 | `4` |
+| `pattern` | string | 是 | 子事件名（精确/正则/通配） |
+
+### Pattern 语义
+
+| Pattern | 匹配方式 |
+|---------|----------|
+| `'group_increase'` | 精确匹配子事件名 |
+| `'/regex/'` | 正则匹配（以 `/` 开头和结尾） |
+| `'*'` | 通配所有子事件 |
+| `''` | 不匹配（视为未声明） |
+
+> **注意**：事件触发器的 `adapter_events` 不会自动设为 `['message']`，由 Go 端走兜底分支匹配非消息事件。如需精确控制，建议显式声明 `adapter_events`（如 `['notice']`）。
+
+### 注解式事件触发
+
+```javascript
+// Node.js
+// @event group_increase
+// @event *
+```
+
+```python
+# Python
+"""
+@event group_increase
+@event *
+"""
+```
 
 ## 多触发器
 
@@ -364,17 +421,20 @@ metadata = {
 }
 ```
 
-## event_types 与触发器
+## adapter_events 与触发器
 
-`event_types` 决定插件订阅哪些事件类型：
+`adapter_events` 决定插件订阅哪些适配器事件类型（六类）：
 
-| event_type | 说明 | 对应钩子 |
+| adapter_event | 说明 | 对应钩子 |
 |------------|------|---------|
-| `"message"` | 消息事件 | `handleMessage` / `handle_message` |
+| `"message"` | 消息事件 | `handleEvent` / `handle_event` |
 | `"notice"` | 通知事件（入群、撤回等） | `onEvent` / `on_event` |
+| `"request"` | 请求事件（加群请求等） | `onEvent` / `on_event` |
 | `"meta"` | 元事件（心跳等） | `onEvent` / `on_event` |
+| `"interaction"` | 交互事件（按钮点击等） | `onEvent` / `on_event` |
+| `"raw"` | 原始兜底事件 | `onEvent` / `on_event` |
 
-> 当定义了 `triggers` 时，`event_types` 自动设为 `["message"]`。如需监听通知或元事件，需手动指定。
+> 当定义了消息类触发器（command/keyword/regex/segment）时，`adapter_events` 自动设为 `["message"]`。仅含事件触发器（`@event`，type=4）时不填，由 Go 端走兜底分支匹配非消息事件。如需监听通知或元事件，需手动指定。
 
 ## 框架内部事件订阅
 
