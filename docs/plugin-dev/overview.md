@@ -60,7 +60,7 @@ plugins/
 
 ```javascript
 class HelloPlugin extends Plugin {
-    async handleMessage(sender) {
+    async handleEvent(sender) {
         await sender.reply(`你好，${sender.getSenderName()}！`);
     }
 }
@@ -70,7 +70,7 @@ HelloPlugin.metadata = {
     version: '1.0.0',
     description: '问候插件',
     triggers: [{ type: 0, pattern: '/hello' }],
-    event_types: ['message']
+    adapter_events: ['message']
 };
 
 module.exports = HelloPlugin;
@@ -88,10 +88,10 @@ class HelloPlugin(Plugin):
             "version": "1.0.0",
             "description": "问候插件",
             "triggers": [{"type": 0, "pattern": "/hello"}],
-            "event_types": ["message"]
+            "adapter_events": ["message"]
         })
 
-    def handle_message(self, sender):
+    def handle_event(self, sender):
         sender.reply(f"你好，{sender.get_sender_name()}！")
 ```
 
@@ -106,9 +106,9 @@ module.exports = {
         version: '1.0.0',
         description: '问候插件',
         triggers: [{ type: 0, pattern: '/hello' }],
-        event_types: ['message']
+        adapter_events: ['message']
     },
-    async handleMessage(sender) {
+    async handleEvent(sender) {
         await sender.reply(`你好，${sender.getSenderName()}！`);
     }
 };
@@ -122,7 +122,7 @@ module.exports = createPlugin({
     version: '1.0.0',
     description: '问候插件',
     triggers: [{ type: 0, pattern: '/hello' }],
-    event_types: ['message']
+    adapter_events: ['message']
 }, async (sender) => {
     await sender.reply(`你好，${sender.getSenderName()}！`);
 });
@@ -136,10 +136,10 @@ metadata = {
     "version": "1.0.0",
     "description": "问候插件",
     "triggers": [{"type": 0, "pattern": "/hello"}],
-    "event_types": ["message"]
+    "adapter_events": ["message"]
 }
 
-def handle_message(sender):
+def handle_event(sender):
     sender.reply(f"你好，{sender.get_sender_name()}！")
 ```
 
@@ -169,7 +169,7 @@ module.exports = async function(sender) {
 @command /hello
 """
 
-def handle_message(sender):
+def handle_event(sender):
     sender.reply(f"你好，{sender.get_sender_name()}！")
 ```
 
@@ -181,7 +181,7 @@ def handle_message(sender):
 |------|------|---------|--------|
 | 启动 | 插件启动时调用（连接服务、开始工作） | `onStart()` | `on_start()` |
 | 停止 | 插件停止时调用（清理资源） | `onStop()` | `on_stop()` |
-| 消息处理 | 收到消息时调用 | `handleMessage(sender)` | `handle_message(sender)` |
+| 消息处理 | 收到消息时调用 | `handleEvent(sender)` | `handle_event(sender)` |
 | 框架事件 | 收到框架内部事件时调用 | `onEvent(event)` | `on_event(event)` |
 | 定时任务 | Cron 触发时调用 | `onCron()` | `on_cron()` |
 | AI 工具调用 | AI 直接调用时 | `executeTool(sender, args)` | `execute_tool(sender, args)` |
@@ -199,7 +199,7 @@ def handle_message(sender):
 
 **普通插件**（有触发能力）：
 ```
-注册 → [等待触发] → handleMessage → [等待下次触发]
+注册 → [等待触发] → handleEvent → [等待下次触发]
 ```
 
 **工具库**（无触发能力）：
@@ -238,7 +238,7 @@ def handle_message(sender):
 
 ### 消息处理结果
 
-插件 `handleMessage` 的返回值不影响后续插件链的执行。框架在消息处理完成后始终标记为已处理。
+插件 `handleEvent` 的返回值不影响后续插件链的执行。框架在消息处理完成后始终标记为已处理。
 
 ### Sender 流程控制
 
