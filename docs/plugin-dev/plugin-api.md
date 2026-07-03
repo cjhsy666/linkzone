@@ -233,7 +233,7 @@ LinkZone.logger.error("module", "错误信息")
 LinkZone.logger.info("这条日志的 module 自动为当前插件名")
 ```
 
-> 完整日志 API（快捷方法、结构化日志、条件日志、计时器、子日志等）详见 [Node.js 插件开发文档](/nodejs) 和 [Python 插件开发文档](/python)。
+> 完整日志 API（快捷方法、结构化日志、条件日志、计时器、子日志等）详见插件开发文档。
 
 ### 方式二：组件私有存储
 
