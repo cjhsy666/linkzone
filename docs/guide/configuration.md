@@ -325,7 +325,3 @@ LinkZone 的配置文件位于 `data/config.yaml`，采用 YAML 数组格式存�
     ]
   type: json
   comment: 外部语言运行时配置
-- key: system.runtimes.enabled
-  value: "true"
-  type: bool
-  comment: 是否启用外置组件运行时 (Node.js/Python等, 默认关闭)
