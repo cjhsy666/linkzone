@@ -57,7 +57,7 @@ module.exports = HelloPlugin;
 
 > **Node.js 注意**：类式插件必须使用**静态属性** `MyPlugin.metadata = {...}` 定义元信息，runtime 在创建实例之前读取。不要写 `super({ name: 'xxx', ... })`，runtime 不会读取 constructor 内的 metadata。
 >
-> **Python 注意**：Python 类式插件通过 `super().__init__({...})` 传入 metadata，两种方式均可：构造函数传入或模块级 `metadata = {...}` 字典。推荐使用构造函数方式。
+> **Python 注意**：Python 类式插件推荐使用**模块级变量** `metadata = {...}` 定义元信息，与函数式插件保持一致。不要在 `__init__` 中通过 `super().__init__(metadata or {...})` 传 metadata，这种写法不匹配 runtime 的正则提取规则（`metadata\s*=\s*\{...\}`），会导致插件被跳过。runtime 创建实例时会自动将解析到的 metadata 传给构造函数。
 
 ### Python - 函数式
 
@@ -80,17 +80,17 @@ metadata = {
 ```python
 # SDK 对象由 runtime 自动注入，无需 import
 
-class HelloPlugin(Plugin):
-    def handle_event(self, sender):
-        sender.reply(f"你好，{sender.get_sender_name()}！")
-
-HelloPlugin.metadata = {
+metadata = {
     "name": "hello",
     "version": "1.0.0",
     "description": "问候插件",
     "triggers": [{"type": 0, "pattern": "/hello"}],
     "adapter_events": ["message"]
 }
+
+class HelloPlugin(Plugin):
+    def handle_event(self, sender):
+        sender.reply(f"你好，{sender.get_sender_name()}！")
 ```
 
 > **Python 注意**：虽然 `Plugin`、`Sender`、`LinkZone`、`LZDB` 是全局变量，但 Python 的类定义语法要求基类在定义时可见。因此 Python 类式插件中 `Plugin` 作为基类必须能被解析到——runtime 会在执行前将其注入全局命名空间，所以无需 import。
@@ -172,15 +172,15 @@ module.exports = TimerPlugin;
 
 ```python
 # Python
-class TimerPlugin(Plugin):
-    def on_cron(self):
-        LinkZone.push("qq", "group_123", "早上好！")
-
-TimerPlugin.metadata = {
+metadata = {
     "name": "morning-greeting",
     "cron": "0 8 * * *",
     "is_service": True
 }
+
+class TimerPlugin(Plugin):
+    def on_cron(self):
+        LinkZone.push("qq", "group_123", "早上好！")
 ```
 
 ### 方式二：回调式定时任务
