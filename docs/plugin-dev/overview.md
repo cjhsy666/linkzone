@@ -81,19 +81,21 @@ module.exports = HelloPlugin;
 ### Python（类式，推荐）
 
 ```python
-class HelloPlugin(Plugin):
-    def __init__(self):
-        super().__init__({
-            "name": "hello",
-            "version": "1.0.0",
-            "description": "问候插件",
-            "triggers": [{"type": 0, "pattern": "/hello"}],
-            "adapter_events": ["message"]
-        })
+metadata = {
+    "name": "hello",
+    "version": "1.0.0",
+    "description": "问候插件",
+    "triggers": [{"type": 0, "pattern": "/hello"}],
+    "adapter_events": ["message"]
+}
 
+
+class HelloPlugin(Plugin):
     def handle_event(self, sender):
         sender.reply(f"你好，{sender.get_sender_name()}！")
 ```
+
+> **重要**：Python 插件的 metadata 推荐以**模块级变量**形式定义（`metadata = {...}`），与函数式插件保持一致。不要在 `__init__` 中通过 `super().__init__(metadata or {...})` 传 metadata，这种写法不匹配 runtime 的正则提取规则（`metadata\s*=\s*\{...\}`），会导致插件被跳过。runtime 创建实例时会自动将解析到的 metadata 传给构造函数。
 
 ## 函数式插件
 
