@@ -311,15 +311,15 @@ module.exports = {
 
 ```python
 # Python - 定时任务插件（无触发器）
-class DailyReportPlugin(Plugin):
-    def on_cron(self):
-        LinkZone.push("qq", "group_123", "今日报告...")
-
-DailyReportPlugin.metadata = {
+metadata = {
     "name": "daily-report",
     "cron": "0 9 * * *",
     "is_service": True
 }
+
+class DailyReportPlugin(Plugin):
+    def on_cron(self):
+        LinkZone.push("qq", "group_123", "今日报告...")
 ```
 
 ## 触发器与权限
@@ -464,16 +464,16 @@ MyPlugin.metadata = {
 
 ```python
 # Python
+metadata = {
+    "name": "my-plugin",
+    "version": "1.0.0",
+    "subscribe": ["adapter.connected", "adapter.disconnected", "config.changed"],
+}
+
 class MyPlugin(Plugin):
     def on_event(self, event):
         if event["name"] == "adapter.connected":
             LinkZone.logger.info("适配器已连接:", event["data"]["platform"])
         elif event["name"] == "config.changed":
             self.reload_config()
-
-MyPlugin.metadata = {
-    "name": "my-plugin",
-    "version": "1.0.0",
-    "subscribe": ["adapter.connected", "adapter.disconnected", "config.changed"],
-}
 ```
