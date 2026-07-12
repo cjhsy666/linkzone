@@ -384,18 +384,18 @@ def handle_event(sender):
 ## 13. Python 示例 - 类式插件
 
 ```python
-class HelloPlugin(Plugin):
-    def handle_event(self, sender):
-        name = sender.get_sender_name()
-        sender.reply(f"你好，{name}！")
-
-HelloPlugin.metadata = {
+metadata = {
     "name": "hello",
     "version": "1.0.0",
     "description": "Python 问候插件",
     "triggers": [{"type": 0, "pattern": "/hello"}],
     "adapter_events": ["message"]
 }
+
+class HelloPlugin(Plugin):
+    def handle_event(self, sender):
+        name = sender.get_sender_name()
+        sender.reply(f"你好，{name}！")
 ```
 
 ## 14. Python 示例 - 流程控制
@@ -422,6 +422,13 @@ metadata = {
 ## 15. Python 示例 - 定时任务
 
 ```python
+metadata = {
+    "name": "monitor",
+    "version": "1.0.0",
+    "description": "服务监控插件",
+    "is_service": True
+}
+
 class MonitorPlugin(Plugin):
     def on_start(self):
         LinkZone.logger.info("monitor", "监控服务启动")
@@ -433,18 +440,18 @@ class MonitorPlugin(Plugin):
     def on_stop(self):
         self.unregister_cron("health_check")
         LinkZone.logger.info("monitor", "监控服务停止")
-
-MonitorPlugin.metadata = {
-    "name": "monitor",
-    "version": "1.0.0",
-    "description": "服务监控插件",
-    "is_service": True
-}
 ```
 
 ## 16. Python 示例 - LZDB 使用
 
 ```python
+metadata = {
+    "name": "user-score",
+    "version": "1.0.0",
+    "description": "用户积分插件",
+    "triggers": [{"type": 0, "pattern": "/score"}]
+}
+
 class UserPlugin(Plugin):
     def handle_event(self, sender):
         user_id = sender.get_sender_id()
@@ -458,11 +465,4 @@ class UserPlugin(Plugin):
         db.set(f"{user_id}_score", score)
 
         sender.reply(f"你的积分: {score}")
-
-UserPlugin.metadata = {
-    "name": "user-score",
-    "version": "1.0.0",
-    "description": "用户积分插件",
-    "triggers": [{"type": 0, "pattern": "/score"}]
-}
 ```
