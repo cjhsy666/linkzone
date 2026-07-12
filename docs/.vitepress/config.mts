@@ -17,6 +17,7 @@ export default defineConfig({
       { text: '功能', link: '/features/adapter' },
       { text: '插件开发', link: '/plugin-dev/overview' },
       { text: 'AI 配置', link: '/ai/overview' },
+      { text: '进阶', link: '/advanced/architecture' },
       { text: '友链', link: '/friends' }
     ],
     sidebar: {
@@ -70,6 +71,14 @@ export default defineConfig({
             { text: '工具系统', link: '/ai/tool' },
             { text: '上下文与记忆', link: '/ai/memory' },
             { text: '多模态', link: '/ai/multimodal' }
+          ]
+        }
+      ],
+      '/advanced/': [
+        {
+          text: '进阶',
+          items: [
+            { text: '框架架构', link: '/advanced/architecture' }
           ]
         }
       ]
