@@ -119,6 +119,19 @@ module.exports = CalculatorPlugin;
 
 ```python
 # Python
+metadata = {
+    "name": "calculator",
+    "ai": {
+        "tool": {
+            "parameters": [
+                {"name": "expression", "type": "string", "description": "数学表达式", "required": True}
+            ],
+            "usage": "数学计算器",
+            "when_to_use": "用户需要进行数学计算时"
+        }
+    }
+}
+
 class CalculatorPlugin(Plugin):
     def execute_tool(self, sender, args):
         expression = args.get("expression", "")
@@ -138,19 +151,6 @@ class CalculatorPlugin(Plugin):
     def safe_eval(self, expr):
         # 安全的数学表达式计算
         pass
-
-CalculatorPlugin.metadata = {
-    "name": "calculator",
-    "ai": {
-        "tool": {
-            "parameters": [
-                {"name": "expression", "type": "string", "description": "数学表达式", "required": True}
-            ],
-            "usage": "数学计算器",
-            "when_to_use": "用户需要进行数学计算时"
-        }
-    }
-}
 ```
 
 ### executeTool 返回值
@@ -265,14 +265,7 @@ module.exports = TranslatePlugin;
 
 ```python
 # Python
-class TranslatePlugin(Plugin):
-    def handle_event(self, sender):
-        text = sender.param(0)
-        target_lang = sender.param(1) or "en"
-        # 翻译逻辑...
-        sender.reply(f"翻译结果: {result}")
-
-TranslatePlugin.metadata = {
+metadata = {
     "name": "translate",
     "triggers": [{"type": 0, "pattern": "/translate"}],
     "ai": {
@@ -286,6 +279,13 @@ TranslatePlugin.metadata = {
         }
     }
 }
+
+class TranslatePlugin(Plugin):
+    def handle_event(self, sender):
+        text = sender.param(0)
+        target_lang = sender.param(1) or "en"
+        # 翻译逻辑...
+        sender.reply(f"翻译结果: {result}")
 ```
 
 ## 两种模式对比
@@ -350,24 +350,7 @@ module.exports = WeatherPlugin;
 
 ```python
 # Python
-class WeatherPlugin(Plugin):
-    # 注入调用：用户直接使用 /weather 命令
-    def handle_event(self, sender):
-        city = sender.param(0)
-        data = self.fetch_weather(city)
-        sender.reply(self.format_weather(data))
-
-    # 直接调用：AI 调用获取结构化数据
-    def execute_tool(self, sender, args):
-        city = args.get("city")
-        days = args.get("days", 1)
-        data = self.fetch_weather(city, days)
-        return {
-            "success": True,
-            "content": json.dumps(data)
-        }
-
-WeatherPlugin.metadata = {
+metadata = {
     "name": "weather",
     "triggers": [{"type": 0, "pattern": "/weather"}],
     "ai": {
@@ -386,6 +369,23 @@ WeatherPlugin.metadata = {
         }
     }
 }
+
+class WeatherPlugin(Plugin):
+    # 注入调用：用户直接使用 /weather 命令
+    def handle_event(self, sender):
+        city = sender.param(0)
+        data = self.fetch_weather(city)
+        sender.reply(self.format_weather(data))
+
+    # 直接调用：AI 调用获取结构化数据
+    def execute_tool(self, sender, args):
+        city = args.get("city")
+        days = args.get("days", 1)
+        data = self.fetch_weather(city, days)
+        return {
+            "success": True,
+            "content": json.dumps(data)
+        }
 ```
 
 ## 注释语法（仅适用于注入模式）
