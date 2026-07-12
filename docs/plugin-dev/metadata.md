@@ -371,17 +371,7 @@ module.exports = WeatherPlugin;
 
 ```python
 # Python
-class WeatherPlugin(Plugin):
-    def handle_event(self, sender):
-        city = sender.param(0)
-        sender.reply(f"{city}今天晴，25°C")
-
-    def execute_tool(self, sender, args):
-        city = args.get("city")
-        days = args.get("days", 1)
-        return {"success": True, "content": f"{city}今天晴，25°C"}
-
-WeatherPlugin.metadata = {
+metadata = {
     "name": "weather",
     "version": "1.2.0",
     "description": "天气查询插件",
@@ -420,4 +410,14 @@ WeatherPlugin.metadata = {
         }
     }
 }
+
+class WeatherPlugin(Plugin):
+    def handle_event(self, sender):
+        city = sender.param(0)
+        sender.reply(f"{city}今天晴，25°C")
+
+    def execute_tool(self, sender, args):
+        city = args.get("city")
+        days = args.get("days", 1)
+        return {"success": True, "content": f"{city}今天晴，25°C"}
 ```
