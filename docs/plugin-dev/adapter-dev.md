@@ -34,19 +34,20 @@ module.exports = QQAdapter;
 
 ```python
 # Python
+metadata = {
+    "name": "qq-adapter",
+    "version": "1.0.0",
+    "description": "QQ 适配器",
+    "platform": "qq",
+    "is_service": True,
+    "adapter_events": ["message", "notice", "meta"]
+}
+
 class QQAdapter(Adapter):
-    def __init__(self, metadata=None):
-        super().__init__(metadata or {
-            "name": "qq-adapter",
-            "version": "1.0.0",
-            "description": "QQ 适配器",
-            "platform": "qq",
-            "is_service": True,
-            "adapter_events": ["message", "notice", "meta"]
-        })
+    pass
 ```
 
-> **重要**：`__init__` 必须接受 `metadata` 参数（可选），runtime 创建实例时会传入 metadata。
+> **重要**：Python 适配器推荐使用**模块级变量** `metadata = {...}` 定义元信息，与函数式插件保持一致。不要在 `__init__` 中通过 `super().__init__(metadata or {...})` 内联定义 metadata，这种写法不匹配 runtime 的正则提取规则（`metadata\s*=\s*\{...\}`），会导致适配器被跳过。runtime 创建实例时会自动将解析到的 metadata 传给 `Adapter.__init__`。
 
 ### 必要字段
 
@@ -82,16 +83,15 @@ class QQAdapter extends Adapter {
 
 ```python
 # Python
-class QQAdapter(Adapter):
-    def __init__(self, metadata=None):
-        super().__init__(metadata or {
-            "name": "qq-adapter",
-            "version": "1.0.0",
-            "platform": "qq",
-            "is_service": True,
-            "adapter_events": ["message", "notice", "meta"]
-        })
+metadata = {
+    "name": "qq-adapter",
+    "version": "1.0.0",
+    "platform": "qq",
+    "is_service": True,
+    "adapter_events": ["message", "notice", "meta"]
+}
 
+class QQAdapter(Adapter):
     def on_start(self):
         self.client = self.connect()
 
@@ -176,17 +176,16 @@ class WebAdapter extends Adapter {
 
 ```python
 # Python
-class WebAdapter(Adapter):
-    def __init__(self, metadata=None):
-        super().__init__(metadata or {
-            "name": "web-adapter",
-            "version": "1.0.0",
-            "description": "Web 适配器",
-            "platform": "web",
-            "is_service": True,
-            "adapter_events": ["message", "notice", "meta"]
-        })
+metadata = {
+    "name": "web-adapter",
+    "version": "1.0.0",
+    "description": "Web 适配器",
+    "platform": "web",
+    "is_service": True,
+    "adapter_events": ["message", "notice", "meta"]
+}
 
+class WebAdapter(Adapter):
     def on_start(self):
         def webhook_handler(req):
             body = req["body"]
@@ -236,15 +235,14 @@ class WSAdapter extends Adapter {
 
 ```python
 # Python
-class WSAdapter(Adapter):
-    def __init__(self, metadata=None):
-        super().__init__(metadata or {
-            "name": "ws-adapter",
-            "platform": "websocket",
-            "is_service": True,
-            "adapter_events": ["message"]
-        })
+metadata = {
+    "name": "ws-adapter",
+    "platform": "websocket",
+    "is_service": True,
+    "adapter_events": ["message"]
+}
 
+class WSAdapter(Adapter):
     def on_start(self):
         self.connections = {}
         self.register_websocket("/ws/chat", {
@@ -462,17 +460,16 @@ module.exports = WebAdapter;
 ### Python 示例
 
 ```python
-class WebAdapter(Adapter):
-    def __init__(self, metadata=None):
-        super().__init__(metadata or {
-            "name": "web-adapter",
-            "version": "1.0.0",
-            "description": "Web 适配器",
-            "platform": "web",
-            "is_service": True,
-            "adapter_events": ["message", "notice", "meta"]
-        })
+metadata = {
+    "name": "web-adapter",
+    "version": "1.0.0",
+    "description": "Web 适配器",
+    "platform": "web",
+    "is_service": True,
+    "adapter_events": ["message", "notice", "meta"]
+}
 
+class WebAdapter(Adapter):
     def on_start(self):
         LinkZone.logger.info("web-adapter", "Web 适配器启动")
         self.connections = {}
@@ -553,15 +550,6 @@ class WebAdapter(Adapter):
     def on_stop(self):
         LinkZone.logger.info("web-adapter", "Web 适配器停止")
         self.connections.clear()
-
-WebAdapter.metadata = {
-    "name": "web-adapter",
-    "version": "1.0.0",
-    "description": "Web 适配器",
-    "platform": "web",
-    "is_service": True,
-    "adapter_events": ["message", "notice", "meta"]
-}
 ```
 
 ## 适配器开发注意事项
